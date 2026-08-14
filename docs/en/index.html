@@ -642,7 +642,8 @@ footer .copy{margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);f
   <div class="wrap topbar">
     <a class="brand" href="#top"><span class="dot"></span>Multi-agent operating discipline <small>Day <span class="js-days">55</span> in production</small></a>
     <nav class="main" aria-label="Main sections">
-      <a href="#cost">Cost structure</a>
+      <a href="#teamwork">Teamwork</a>
+        <a href="#cost">Cost structure</a>
       <a href="#calc">Calculator</a>
       <a href="#rules">The nine disciplines</a>
       <a href="#setup">Role split</a>
@@ -784,6 +785,77 @@ footer .copy{margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);f
       <p>The locks are advisory. Skip the declaration, open the file in an editor and edit it directly, and nothing stops you. The git hook is the second line of defence, and that can be bypassed with <code>--no-verify</code>. What this stops is <b>an honest mistake made by someone doing the work properly</b>, not someone determined to get around it.</p>
       <p>Semantic conflicts across different files are out of scope. Those belong to your tests and your reviewer.</p>
       <p>And this is not an argument for running more agents in parallel. For small jobs, one at a time is faster. This exists to keep the people <b>already running several</b> out of trouble.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TEAMWORK ===================== -->
+<section id="teamwork">
+  <div class="wrap">
+    <p class="eyebrow">Working as a team</p>
+    <h2 class="sec">It doesn&rsquo;t just stop overwrites. It makes them work as one team.</h2>
+    <p class="lede">
+      File locks are only the first button. For several agents to actually <b>work together</b>, more has to follow.
+      Who owns what. Where a decision goes when one of them shouldn&rsquo;t make it alone. Who picks up the work when one drops out.
+      And how you know &ldquo;it&rsquo;s done&rdquo; means anything. All of that is in here, as code rather than as a document nobody reads.
+    </p>
+
+    <ul class="cause">
+      <li>
+        <h3>They divide the ground</h3>
+        <p><code>claim</code> takes the files before the work starts. What someone else holds can&rsquo;t be taken, and anything outside your area is refused at commit time. Locks expire, so an agent that dies doesn&rsquo;t wedge the repository.</p>
+      </li>
+      <li>
+        <h3>Decisions go upward</h3>
+        <p><code>msg</code> and <code>inbox</code> let agents talk. Instead of deciding alone, the hands stop and say &ldquo;this needs a decision&rdquo; &mdash; and the head picks it up and answers.</p>
+      </li>
+      <li>
+        <h3>Work survives a dropout</h3>
+        <p><code>handoff</code> leaves a note behind. When a session dies or the context window runs out, the next agent reads what was in flight and continues instead of starting over.</p>
+      </li>
+      <li>
+        <h3>&ldquo;Done&rdquo; has to be earned</h3>
+        <p><code>report</code> <b>refuses to file when the &ldquo;could not verify&rdquo; section is empty.</b> A blank there isn&rsquo;t a lie, but it reads like one to whoever comes next. That misreading gets closed off structurally.</p>
+      </li>
+      <li>
+        <h3>One deployer, with approval</h3>
+        <p><code>request</code> and <code>approve</code> put a human in front of deploys, schema changes and anything you mark risky. Writing it in the ledger is not the same as being approved.</p>
+      </li>
+      <li>
+        <h3>Records that can&rsquo;t be quietly edited</h3>
+        <p><code>ledger</code> is append-only and hash-chained. Change or delete a single line and it tells you exactly which one was tampered with. The whole team reads the same history.</p>
+      </li>
+    </ul>
+
+    <div class="thesis">
+      <div>
+        <h3>And that is what makes cheap models usable</h3>
+        <div class="split">
+          <span class="chip">discipline first</span>
+          <span class="chip">the saving is downstream</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          The real reason people don&rsquo;t put a local or low-cost model on serious work isn&rsquo;t capability.
+          <b>It&rsquo;s that you can&rsquo;t trust the output when it works unsupervised.</b> It edits files that belong to someone else,
+          reports work as verified when it wasn&rsquo;t, deploys without asking, and leaves no record of what it did.
+          Then a human has to re-check everything, and at that point you may as well have paid for the expensive model from the start.
+        </p>
+        <p>
+          Put the six things above in code and that arithmetic flips.
+          <b>The bulk generation goes to the cheap side; only judgement and review stay on the strong model.</b>
+          When the cheap side steps over a line the tool stops it, decisions it shouldn&rsquo;t make travel upward,
+          and what it failed to verify is written into the report.
+          <b>$200 a month becoming $40 is the result of that</b> &mdash; not because the model is cheap,
+          but because the cheap model became something you can rely on.
+        </p>
+      </div>
+    </div>
+
+    <div class="plans-foot">
+      <p>The free <code>agentlock</code> implements the first of these &mdash; file ownership. It is MIT licensed and fine to use on its own.</p>
+      <p>The other five &mdash; crew talk, handoff, verified completion reports, approval gates and the hash-chained ledger &mdash; plus per-role identity prompts and the cost-routing setup, are in the paid edition.</p>
     </div>
   </div>
 </section>
