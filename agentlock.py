@@ -34,7 +34,43 @@ import sys
 import time
 from datetime import datetime, timezone
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
+
+# ---------------------------------------------------------------------------
+# 화면에 나가는 글의 언어 / Interface language
+# ---------------------------------------------------------------------------
+# AGENTLOCK_LANG 으로 직접 정합니다 (ko / en). 정하지 않으면 시스템 로케일을 보고,
+# 한국어 환경이면 한국어로 둡니다. 쓰던 분이 갑자기 영어 화면을 보지 않게 하려는 것입니다.
+# 번역이 없는 문장은 원문이 그대로 나옵니다. 번역표가 비어 있어도 멈추지 않습니다.
+
+
+def _pick_lang() -> str:
+    want = (os.environ.get("AGENTLOCK_LANG") or "").strip().lower()
+    if want.startswith("en"):
+        return "en"
+    if want.startswith("ko"):
+        return "ko"
+    for key in ("LC_ALL", "LC_MESSAGES", "LANG"):
+        val = (os.environ.get(key) or "").strip().lower()
+        if not val:
+            continue
+        if val.startswith("ko"):
+            return "ko"
+        if val in ("c", "posix", "c.utf-8"):
+            continue          # 로케일을 안 정한 것이지 영어라는 뜻은 아니다
+        return "en"
+    return "ko"
+
+
+LANG = _pick_lang()
+
+
+def _t(s: str) -> str:
+    """화면에 나갈 문장 하나를 지금 언어로 바꿉니다. 번역이 없으면 원문 그대로."""
+    if LANG == "ko":
+        return s
+    return EN.get(s, s)
+
 
 STATE_DIR = ".agentlock"
 LOCKS_FILE = "locks.json"
@@ -118,8 +154,7 @@ class Guard:
                 if time.time() > deadline:
                     raise SystemExit(
                         paint(
-                            f"다른 프로세스가 {STATE_DIR} 를 잡고 있습니다. "
-                            f"계속 이러면 {self.path} 를 지우세요.",
+                            _t('다른 프로세스가 {0} 를 잡고 있습니다. 계속 이러면 {1} 를 지우세요.').format(STATE_DIR, self.path),
                             C_RED,
                         )
                     )
@@ -146,7 +181,7 @@ def load_locks(root: str) -> dict:
         backup = path + ".corrupt"
         os.replace(path, backup)
         print(
-            paint(f"경고: 락 파일이 깨져서 {backup} 로 옮기고 새로 시작합니다.", C_YELLOW),
+            paint(_t('경고: 락 파일이 깨져서 {0} 로 옮기고 새로 시작합니다.').format(backup), C_YELLOW),
             file=sys.stderr,
         )
         return {}
@@ -188,7 +223,7 @@ def parse_ttl(text: str) -> int:
     """30m, 2h, 90s, 45 를 초로. 숫자만 오면 분으로 본다."""
     text = str(text).strip().lower()
     if not text:
-        raise ValueError("빈 TTL")
+        raise ValueError(_t("빈 TTL"))
     units = {"s": 1, "m": 60, "h": 3600, "d": 86400}
     if text[-1] in units:
         value, mult = text[:-1], units[text[-1]]
@@ -197,19 +232,19 @@ def parse_ttl(text: str) -> int:
     try:
         n = float(value)
     except ValueError:
-        raise ValueError(f"TTL 형식이 잘못됐습니다: {text}")
+        raise ValueError(_t('TTL 형식이 잘못됐습니다: {0}').format(text))
     if n <= 0:
-        raise ValueError("TTL은 0보다 커야 합니다")
+        raise ValueError(_t("TTL은 0보다 커야 합니다"))
     return int(n * mult)
 
 
 def human_left(seconds: float) -> str:
     seconds = int(max(0, seconds))
     if seconds >= 3600:
-        return f"{seconds // 3600}시간 {(seconds % 3600) // 60}분"
+        return _t('{0}시간 {1}분').format(seconds // 3600, (seconds % 3600) // 60)
     if seconds >= 60:
-        return f"{seconds // 60}분"
-    return f"{seconds}초"
+        return _t('{0}분').format(seconds // 60)
+    return _t('{0}초').format(seconds)
 
 
 def human_ago(iso: str) -> str:
@@ -218,7 +253,7 @@ def human_ago(iso: str) -> str:
     except ValueError:
         return "?"
     delta = (datetime.now(timezone.utc).astimezone() - then).total_seconds()
-    return human_left(delta) + " 전"
+    return human_left(delta) + _t(" 전")
 
 
 def norm(root: str, path: str) -> str:
@@ -297,20 +332,19 @@ def cmd_claim(args) -> int:
                 blocked.append((t, lp, entry))
 
         if blocked and not args.force:
-            print(paint("잡을 수 없습니다. 다른 에이전트가 작업 중입니다.", C_RED))
+            print(paint(_t("잡을 수 없습니다. 다른 에이전트가 작업 중입니다."), C_RED))
             for target, lock_path, entry in blocked:
                 left = human_left(entry.get("expires_at", 0) - time.time())
                 who = paint(entry.get("agent", "?"), C_BOLD)
                 print(f"  {target}")
                 print(
-                    f"    └ {who} 가 {lock_path} 를 잡고 있음 "
-                    f"({human_ago(entry.get('claimed_at', ''))} 시작, {left} 남음)"
+                    _t('    └ {0} 가 {1} 를 잡고 있음 ({2} 시작, {3} 남음)').format(who, lock_path, human_ago(entry.get('claimed_at', '')), left)
                 )
                 if entry.get("note"):
-                    print(paint(f"      메모: {entry['note']}", C_DIM))
+                    print(paint(_t('      메모: {0}').format(entry['note']), C_DIM))
             print()
-            print(paint("먼저 끝나기를 기다리거나, 다른 파일부터 작업하세요.", C_DIM))
-            print(paint("정말 넘겨받아야 하면 --force 를 쓰되 감사 로그에 남습니다.", C_DIM))
+            print(paint(_t("먼저 끝나기를 기다리거나, 다른 파일부터 작업하세요."), C_DIM))
+            print(paint(_t("정말 넘겨받아야 하면 --force 를 쓰되 감사 로그에 남습니다."), C_DIM))
             return 1
 
         now = time.time()
@@ -346,11 +380,11 @@ def cmd_claim(args) -> int:
             audit(root, "steal", path=path, agent=args.agent, taken_from=victim)
 
     for path, victim in stolen:
-        print(paint(f"강제 회수: {path} ({victim} → {args.agent})", C_YELLOW))
+        print(paint(_t('강제 회수: {0} ({1} → {2})').format(path, victim, args.agent), C_YELLOW))
     for t in taken:
-        print(paint(f"확보  {t}", C_GREEN) + paint(f"  ({human_left(ttl)})", C_DIM))
+        print(paint(_t('확보  {0}').format(t), C_GREEN) + paint(f"  ({human_left(ttl)})", C_DIM))
     for t in renewed:
-        print(paint(f"연장  {t}", C_GREEN) + paint(f"  ({human_left(ttl)})", C_DIM))
+        print(paint(_t('연장  {0}').format(t), C_GREEN) + paint(f"  ({human_left(ttl)})", C_DIM))
     return 0
 
 
@@ -366,7 +400,7 @@ def cmd_release(args) -> int:
             targets = [norm(root, p) for p in args.paths]
 
         if not targets:
-            print(paint("풀 락이 없습니다.", C_DIM))
+            print(paint(_t("풀 락이 없습니다."), C_DIM))
             return 0
 
         released, denied = [], []
@@ -385,9 +419,9 @@ def cmd_release(args) -> int:
             audit(root, "release", path=t, agent=args.agent)
 
     for t, owner in denied:
-        print(paint(f"거부  {t} 는 {owner} 의 락입니다", C_RED))
+        print(paint(_t('거부  {0} 는 {1} 의 락입니다').format(t, owner), C_RED))
     for t in released:
-        print(paint(f"해제  {t}", C_GREEN))
+        print(paint(_t('해제  {0}').format(t), C_GREEN))
     return 1 if denied else 0
 
 
@@ -404,26 +438,26 @@ def cmd_status(args) -> int:
         return 0
 
     if not locks:
-        print(paint("잡혀 있는 파일이 없습니다.", C_DIM))
+        print(paint(_t("잡혀 있는 파일이 없습니다."), C_DIM))
         if expired:
-            print(paint(f"({len(expired)}건이 만료되어 자동 해제됐습니다)", C_DIM))
+            print(paint(_t('({0}건이 만료되어 자동 해제됐습니다)').format(len(expired)), C_DIM))
         return 0
 
     by_agent: dict[str, list] = {}
     for path, entry in sorted(locks.items()):
         by_agent.setdefault(entry.get("agent", "?"), []).append((path, entry))
 
-    print(paint(f"작업 중인 에이전트 {len(by_agent)}", C_BOLD))
+    print(paint(_t('작업 중인 에이전트 {0}').format(len(by_agent)), C_BOLD))
     for agent, items in sorted(by_agent.items()):
         print()
-        print(f"  {paint(agent, C_BOLD)}  ({len(items)}개 파일)")
+        print(_t('  {0}  ({1}개 파일)').format(paint(agent, C_BOLD), len(items)))
         for path, entry in items:
             left = entry.get("expires_at", 0) - time.time()
             mark = C_YELLOW if left < 300 else C_GREEN
             print(
                 f"    {paint('●', mark)} {path}  "
                 + paint(
-                    f"{human_ago(entry.get('claimed_at', ''))} 시작 / {human_left(left)} 남음",
+                    _t('{0} 시작 / {1} 남음').format(human_ago(entry.get('claimed_at', '')), human_left(left)),
                     C_DIM,
                 )
             )
@@ -431,7 +465,7 @@ def cmd_status(args) -> int:
                 print(paint(f"        {entry['note']}", C_DIM))
     if expired:
         print()
-        print(paint(f"{len(expired)}건이 만료되어 자동 해제됐습니다.", C_DIM))
+        print(paint(_t('{0}건이 만료되어 자동 해제됐습니다.').format(len(expired)), C_DIM))
     return 0
 
 
@@ -455,15 +489,15 @@ def cmd_check(args) -> int:
     if not problems:
         return 0
 
-    print(paint("커밋을 멈췄습니다. 남이 잡고 있는 파일이 섞였습니다.", C_RED))
+    print(paint(_t("커밋을 멈췄습니다. 남이 잡고 있는 파일이 섞였습니다."), C_RED))
     for target, lock_path, entry in problems:
         left = human_left(entry.get("expires_at", 0) - time.time())
-        print(f"  {target}  ←  {paint(entry.get('agent', '?'), C_BOLD)} ({lock_path}, {left} 남음)")
+        print(_t('  {0}  ←  {1} ({2}, {3} 남음)').format(target, paint(entry.get('agent', '?'), C_BOLD), lock_path, left))
     print()
-    print(paint("해결 방법", C_BOLD))
-    print("  1. 상대가 끝낼 때까지 기다린다")
-    print("  2. 해당 파일만 커밋에서 빼고 나머지를 올린다")
-    print(f"  3. 정말 넘겨받아야 하면  agentlock claim <경로> -a {args.agent} --force")
+    print(paint(_t("해결 방법"), C_BOLD))
+    print(_t("  1. 상대가 끝낼 때까지 기다린다"))
+    print(_t("  2. 해당 파일만 커밋에서 빼고 나머지를 올린다"))
+    print(_t('  3. 정말 넘겨받아야 하면  agentlock claim <경로> -a {0} --force').format(args.agent))
     return 1
 
 
@@ -491,11 +525,11 @@ def cmd_who(args) -> int:
     t = norm(root, args.path)
     found = [(lp, e) for lp, e in locks.items() if covers(lp, t)]
     if not found:
-        print(paint("아무도 안 잡고 있습니다.", C_GREEN))
+        print(paint(_t("아무도 안 잡고 있습니다."), C_GREEN))
         return 0
     for lp, entry in found:
         left = human_left(entry.get("expires_at", 0) - time.time())
-        print(f"{paint(entry.get('agent', '?'), C_BOLD)}  ({lp}, {left} 남음)")
+        print(_t('{0}  ({1}, {2} 남음)').format(paint(entry.get('agent', '?'), C_BOLD), lp, left))
         if entry.get("note"):
             print(paint(f"  {entry['note']}", C_DIM))
     return 0
@@ -508,15 +542,15 @@ def cmd_log(args) -> int:
         with open(path, encoding="utf-8") as fh:
             lines = fh.readlines()
     except FileNotFoundError:
-        print(paint("감사 로그가 아직 없습니다.", C_DIM))
+        print(paint(_t("감사 로그가 아직 없습니다."), C_DIM))
         return 0
 
     icons = {
-        "claim": paint("확보", C_GREEN),
-        "renew": paint("연장", C_GREEN),
-        "release": paint("해제", C_DIM),
-        "expire": paint("만료", C_YELLOW),
-        "steal": paint("강제회수", C_RED),
+        "claim": paint(_t("확보"), C_GREEN),
+        "renew": paint(_t("연장"), C_GREEN),
+        "release": paint(_t("해제"), C_DIM),
+        "expire": paint(_t("만료"), C_YELLOW),
+        "steal": paint(_t("강제회수"), C_RED),
     }
     for line in lines[-args.number :]:
         try:
@@ -529,7 +563,7 @@ def cmd_log(args) -> int:
         action = icons.get(rec.get("action", ""), rec.get("action", ""))
         extra = ""
         if rec.get("taken_from"):
-            extra = paint(f"  ({rec['taken_from']} 로부터)", C_DIM)
+            extra = paint(_t('  ({0} 로부터)').format(rec['taken_from']), C_DIM)
         print(f"{paint(ts, C_DIM)}  {action}  {rec.get('agent', '?'):<12} {rec.get('path', '')}{extra}")
     return 0
 
@@ -546,13 +580,13 @@ def cmd_install_hook(args) -> int:
     root = find_root()
     hooks = os.path.join(root, ".git", "hooks")
     if not os.path.isdir(hooks):
-        print(paint("git 저장소가 아닙니다.", C_RED), file=sys.stderr)
+        print(paint(_t("git 저장소가 아닙니다."), C_RED), file=sys.stderr)
         return 2
 
     target = os.path.join(hooks, "pre-commit")
     if os.path.exists(target) and not args.force:
-        print(paint(f"이미 pre-commit 훅이 있습니다: {target}", C_YELLOW))
-        print(paint("덮어쓰려면 --force 를 쓰세요.", C_DIM))
+        print(paint(_t('이미 pre-commit 훅이 있습니다: {0}').format(target), C_YELLOW))
+        print(paint(_t("덮어쓰려면 --force 를 쓰세요."), C_DIM))
         return 1
 
     # 내용을 먼저 완성한다. 중간에 실패해서 빈 훅 파일이 남으면 커밋이 조용히 통과한다.
@@ -565,10 +599,10 @@ def cmd_install_hook(args) -> int:
     os.chmod(tmp, 0o755)
     os.replace(tmp, target)
 
-    print(paint(f"설치했습니다: {target}", C_GREEN))
-    print(paint("이제 남이 잡은 파일이 섞이면 커밋이 멈춥니다.", C_DIM))
-    print(paint("에이전트마다 AGENT_NAME 환경변수를 다르게 주세요.", C_DIM))
-    print(paint('  예)  export AGENT_NAME=codex', C_DIM))
+    print(paint(_t('설치했습니다: {0}').format(target), C_GREEN))
+    print(paint(_t("이제 남이 잡은 파일이 섞이면 커밋이 멈춥니다."), C_DIM))
+    print(paint(_t("에이전트마다 AGENT_NAME 환경변수를 다르게 주세요."), C_DIM))
+    print(paint(_t('  예)  export AGENT_NAME=codex'), C_DIM))
     return 0
 
 
@@ -581,8 +615,8 @@ def cmd_init(args) -> int:
         with open(gitignore, "w", encoding="utf-8") as fh:
             # 가드와 임시파일만 제외. 락과 감사로그는 공유해야 의미가 있다.
             fh.write(".guard\n*.tmp\n*.corrupt\n")
-    print(paint(f"준비됐습니다: {d}", C_GREEN))
-    print(paint("locks.json 과 audit.jsonl 은 커밋에 포함하세요. 팀이 같이 봐야 합니다.", C_DIM))
+    print(paint(_t('준비됐습니다: {0}').format(d), C_GREEN))
+    print(paint(_t("locks.json 과 audit.jsonl 은 커밋에 포함하세요. 팀이 같이 봐야 합니다."), C_DIM))
     return 0
 
 
@@ -592,9 +626,9 @@ def cmd_init(args) -> int:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="agentlock",
-        description="여러 AI 에이전트가 같은 파일을 동시에 고치는 사고를 막습니다.",
+        description=_t("여러 AI 에이전트가 같은 파일을 동시에 고치는 사고를 막습니다."),
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""예시
+        epilog=_t("""예시
   agentlock init
   agentlock claim src/api.ts src/db.ts -a codex -t 30m --note "결제 API 리팩터링"
   agentlock status
@@ -602,48 +636,48 @@ def build_parser() -> argparse.ArgumentParser:
   agentlock check -a claude
   agentlock release -a codex --all
   agentlock install-hook
-""",
+"""),
     )
     p.add_argument("-V", "--version", action="version", version=f"agentlock {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    c = sub.add_parser("init", help="현재 저장소에 .agentlock 준비")
+    c = sub.add_parser("init", help=_t("현재 저장소에 .agentlock 준비"))
     c.set_defaults(func=cmd_init)
 
-    c = sub.add_parser("claim", help="파일을 잡는다 (작업 시작 선언)")
+    c = sub.add_parser("claim", help=_t("파일을 잡는다 (작업 시작 선언)"))
     c.add_argument("paths", nargs="+")
-    c.add_argument("-a", "--agent", required=True, help="에이전트 이름 (codex, claude, cursor …)")
-    c.add_argument("-t", "--ttl", default="30m", help="유효 시간. 기본 30m")
-    c.add_argument("-n", "--note", default="", help="무슨 작업인지 한 줄")
-    c.add_argument("--force", action="store_true", help="남의 락을 강제로 회수 (감사 로그에 남음)")
+    c.add_argument("-a", "--agent", required=True, help=_t("에이전트 이름 (codex, claude, cursor …)"))
+    c.add_argument("-t", "--ttl", default="30m", help=_t("유효 시간. 기본 30m"))
+    c.add_argument("-n", "--note", default="", help=_t("무슨 작업인지 한 줄"))
+    c.add_argument("--force", action="store_true", help=_t("남의 락을 강제로 회수 (감사 로그에 남음)"))
     c.set_defaults(func=cmd_claim)
 
-    c = sub.add_parser("release", help="락을 푼다")
+    c = sub.add_parser("release", help=_t("락을 푼다"))
     c.add_argument("paths", nargs="*")
     c.add_argument("-a", "--agent", required=True)
-    c.add_argument("--all", action="store_true", help="내가 잡은 것 전부")
+    c.add_argument("--all", action="store_true", help=_t("내가 잡은 것 전부"))
     c.add_argument("--force", action="store_true")
     c.set_defaults(func=cmd_release)
 
-    c = sub.add_parser("status", help="지금 누가 뭘 잡고 있나")
+    c = sub.add_parser("status", help=_t("지금 누가 뭘 잡고 있나"))
     c.add_argument("--json", action="store_true")
     c.set_defaults(func=cmd_status)
 
-    c = sub.add_parser("check", help="커밋 전 검사. 남의 파일이 섞였으면 실패")
-    c.add_argument("paths", nargs="*", help="비우면 git staged 파일을 본다")
+    c = sub.add_parser("check", help=_t("커밋 전 검사. 남의 파일이 섞였으면 실패"))
+    c.add_argument("paths", nargs="*", help=_t("비우면 git staged 파일을 본다"))
     c.add_argument("-a", "--agent", required=True)
     c.set_defaults(func=cmd_check)
 
-    c = sub.add_parser("who", help="이 파일 누가 잡고 있나")
+    c = sub.add_parser("who", help=_t("이 파일 누가 잡고 있나"))
     c.add_argument("path")
     c.set_defaults(func=cmd_who)
 
-    c = sub.add_parser("log", help="감사 로그")
+    c = sub.add_parser("log", help=_t("감사 로그"))
     c.add_argument("-n", "--number", type=int, default=30)
     c.add_argument("-a", "--agent", default="")
     c.set_defaults(func=cmd_log)
 
-    c = sub.add_parser("install-hook", help="git pre-commit 훅 설치")
+    c = sub.add_parser("install-hook", help=_t("git pre-commit 훅 설치"))
     c.add_argument("--force", action="store_true")
     c.set_defaults(func=cmd_install_hook)
 
@@ -656,6 +690,81 @@ def main(argv: list[str] | None = None) -> int:
         return args.func(args)
     except KeyboardInterrupt:
         return 130
+
+
+# ---------------------------------------------------------------------------
+# 영문 번역표 / English strings
+# ---------------------------------------------------------------------------
+# 왼쪽이 원문, 오른쪽이 영문입니다. 여기 없는 문장은 원문이 그대로 나옵니다.
+
+EN = {
+    ' 전': ' ago',
+    '  1. 상대가 끝낼 때까지 기다린다': '  1. Wait for them to finish',
+    '  2. 해당 파일만 커밋에서 빼고 나머지를 올린다': '  2. Unstage that file and commit the rest',
+    '빈 TTL': 'empty TTL',
+    'TTL은 0보다 커야 합니다': 'TTL must be greater than 0',
+    '{0}초': '{0}s',
+    '커밋을 멈췄습니다. 남이 잡고 있는 파일이 섞였습니다.': 'Commit stopped. It includes files someone else is holding.',
+    '해결 방법': 'What to do',
+    '확보': 'CLAIM',
+    '연장': 'RENEW',
+    '해제': 'RELEASE',
+    '만료': 'EXPIRE',
+    '강제회수': 'STEAL',
+    '이제 남이 잡은 파일이 섞이면 커밋이 멈춥니다.': "Commits that include someone else's claimed files will now stop.",
+    '에이전트마다 AGENT_NAME 환경변수를 다르게 주세요.': 'Give each agent its own AGENT_NAME environment variable.',
+    '  예)  export AGENT_NAME=codex': '  e.g.  export AGENT_NAME=codex',
+    'locks.json 과 audit.jsonl 은 커밋에 포함하세요. 팀이 같이 봐야 합니다.': 'Commit locks.json and audit.jsonl. This only works if the whole team sees them.',
+    '여러 AI 에이전트가 같은 파일을 동시에 고치는 사고를 막습니다.': 'Stops several AI agents from editing the same file at once.',
+    '예시\n  agentlock init\n  agentlock claim src/api.ts src/db.ts -a codex -t 30m --note "결제 API 리팩터링"\n  agentlock status\n  agentlock who src/api.ts\n  agentlock check -a claude\n  agentlock release -a codex --all\n  agentlock install-hook\n': 'Examples\n  agentlock init\n  agentlock claim src/api.ts src/db.ts -a codex -t 30m --note "payment API refactor"\n  agentlock status\n  agentlock who src/api.ts\n  agentlock check -a claude\n  agentlock release -a codex --all\n  agentlock install-hook\n',
+    '현재 저장소에 .agentlock 준비': 'prepare .agentlock in the current repository',
+    '파일을 잡는다 (작업 시작 선언)': 'claim files (declare work before you start)',
+    '에이전트 이름 (codex, claude, cursor …)': 'agent name (codex, claude, cursor …)',
+    '유효 시간. 기본 30m': 'how long the claim lasts. Default 30m',
+    '무슨 작업인지 한 줄': 'one line on what you are doing',
+    '남의 락을 강제로 회수 (감사 로그에 남음)': "take someone else's lock by force (recorded in the audit log)",
+    '락을 푼다': 'release locks',
+    '내가 잡은 것 전부': 'everything I hold',
+    '지금 누가 뭘 잡고 있나': 'who is holding what right now',
+    '커밋 전 검사. 남의 파일이 섞였으면 실패': "pre-commit check. Fails if someone else's files are included",
+    '비우면 git staged 파일을 본다': 'with no paths, inspects git staged files',
+    '이 파일 누가 잡고 있나': 'who holds this file',
+    '감사 로그': 'audit log',
+    'git pre-commit 훅 설치': 'install the git pre-commit hook',
+    '{0}시간 {1}분': '{0}h {1}m',
+    '{0}분': '{0}m',
+    '잡혀 있는 파일이 없습니다.': 'Nothing is being held.',
+    '  3. 정말 넘겨받아야 하면  agentlock claim <경로> -a {0} --force': '  3. If you truly must take it over:  agentlock claim <path> -a {0} --force',
+    '아무도 안 잡고 있습니다.': 'Nobody is holding it.',
+    'git 저장소가 아닙니다.': 'Not a git repository.',
+    '덮어쓰려면 --force 를 쓰세요.': 'Use --force to overwrite it.',
+    '잡을 수 없습니다. 다른 에이전트가 작업 중입니다.': 'Cannot claim it. Another agent is working on it.',
+    '먼저 끝나기를 기다리거나, 다른 파일부터 작업하세요.': 'Wait for them to finish, or start on another file.',
+    '정말 넘겨받아야 하면 --force 를 쓰되 감사 로그에 남습니다.': 'You can take it over with --force, but it goes in the audit log.',
+    '풀 락이 없습니다.': 'There are no locks to release.',
+    '작업 중인 에이전트 {0}': '{0} agents working',
+    '  {0}  ({1}개 파일)': '  {0}  ({1} files)',
+    '  {0}  ←  {1} ({2}, {3} 남음)': '  {0}  ←  {1} ({2}, {3} left)',
+    '{0}  ({1}, {2} 남음)': '{0}  ({1}, {2} left)',
+    '감사 로그가 아직 없습니다.': 'No audit log yet.',
+    '설치했습니다: {0}': 'Installed: {0}',
+    '준비됐습니다: {0}': 'Ready: {0}',
+    'TTL 형식이 잘못됐습니다: {0}': 'Bad TTL format: {0}',
+    '강제 회수: {0} ({1} → {2})': 'Taken by force: {0} ({1} → {2})',
+    '거부  {0} 는 {1} 의 락입니다': 'DENIED  {0} is held by {1}',
+    '해제  {0}': 'RELEASED  {0}',
+    '{0}건이 만료되어 자동 해제됐습니다.': '{0} expired locks were released automatically.',
+    '  ({0} 로부터)': '  (from {0})',
+    '이미 pre-commit 훅이 있습니다: {0}': 'A pre-commit hook already exists: {0}',
+    '경고: 락 파일이 깨져서 {0} 로 옮기고 새로 시작합니다.': 'Warning: the lock file was corrupt, so it was moved to {0} and started fresh.',
+    '    └ {0} 가 {1} 를 잡고 있음 ({2} 시작, {3} 남음)': '    └ {0} is holding {1} (started {2}, {3} left)',
+    '확보  {0}': 'CLAIMED  {0}',
+    '연장  {0}': 'RENEWED  {0}',
+    '({0}건이 만료되어 자동 해제됐습니다)': '({0} expired locks were released automatically)',
+    '{0} 시작 / {1} 남음': 'started {0} / {1} left',
+    '      메모: {0}': '      Note: {0}',
+    '다른 프로세스가 {0} 를 잡고 있습니다. 계속 이러면 {1} 를 지우세요.': 'Another process is holding {0}. If it persists, delete {1}.',
+}
 
 
 if __name__ == "__main__":

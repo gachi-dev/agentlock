@@ -47,102 +47,100 @@ Cloning the repo and copying `agentlock.py` alone works exactly the same.
 
 ## 60-second start
 
-Everything below is copied verbatim from a real run. (Demo repo lives at `/tmp/myapp`, and the tool's output is Korean.)
+Everything below is copied verbatim from a real run with `AGENTLOCK_LANG=en`. (Demo repo lives at `/tmp/myapp`.)
 
 **1. Set up the repo**
 
 ```console
 $ agentlock init
-준비됐습니다: /tmp/myapp/.agentlock
-locks.json 과 audit.jsonl 은 커밋에 포함하세요. 팀이 같이 봐야 합니다.
+Ready: /tmp/myapp/.agentlock
+Commit locks.json and audit.jsonl. This only works if the whole team sees them.
 ```
-
-> Ready: /tmp/myapp/.agentlock — commit locks.json and audit.jsonl; the team needs to see them.
 
 **2. Claim files before you start working**
 
 ```console
-$ agentlock claim src/payment.ts src/order.ts -a agent-a -t 30m --note "결제 API 리팩터링"
-확보  src/payment.ts  (30분)
-확보  src/order.ts  (30분)
+$ agentlock claim src/payment.ts src/order.ts -a agent-a -t 30m --note "payment API refactor"
+CLAIMED  src/payment.ts  (30m)
+CLAIMED  src/order.ts  (30m)
 ```
-
-> Claimed src/payment.ts (30 min), claimed src/order.ts (30 min).
 
 **3. Another agent trying the same file gets blocked** (exit code 1)
 
 ```console
 $ agentlock claim src/payment.ts -a agent-b -t 20m
-잡을 수 없습니다. 다른 에이전트가 작업 중입니다.
+Cannot claim it. Another agent is working on it.
   src/payment.ts
-    └ agent-a 가 src/payment.ts 를 잡고 있음 (1분 전 시작, 28분 남음)
-      메모: 결제 API 리팩터링
+    └ agent-a is holding src/payment.ts (started 0s ago, 29m left)
+      Note: payment API refactor
 
-먼저 끝나기를 기다리거나, 다른 파일부터 작업하세요.
-정말 넘겨받아야 하면 --force 를 쓰되 감사 로그에 남습니다.
+Wait for them to finish, or start on another file.
+You can take it over with --force, but it goes in the audit log.
 ```
-
-> Can't claim — another agent is working. `agent-a` holds `src/payment.ts` (started 1 min ago, 28 min left), note: "payment API refactor." Wait for them or work elsewhere. If you really must take over, use `--force` — it goes into the audit log.
 
 **4. See who's holding what**
 
 ```console
 $ agentlock status
-작업 중인 에이전트 1
+1 agents working
 
-  agent-a  (2개 파일)
-    ● src/order.ts  1분 전 시작 / 28분 남음
-        결제 API 리팩터링
-    ● src/payment.ts  1분 전 시작 / 28분 남음
-        결제 API 리팩터링
+  agent-a  (2 files)
+    ● src/order.ts  started 0s ago / 29m left
+        payment API refactor
+    ● src/payment.ts  started 0s ago / 29m left
+        payment API refactor
 ```
-
-> 1 agent working. `agent-a` (2 files), each started 1 min ago with 28 min left.
 
 **5. Install the commit hook so human slips get caught too**
 
 ```console
 $ agentlock install-hook
-설치했습니다: /tmp/myapp/.git/hooks/pre-commit
-이제 남이 잡은 파일이 섞이면 커밋이 멈춥니다.
-에이전트마다 AGENT_NAME 환경변수를 다르게 주세요.
-  예)  export AGENT_NAME=codex
+Installed: /tmp/myapp/.git/hooks/pre-commit
+Commits that include someone else's claimed files will now stop.
+Give each agent its own AGENT_NAME environment variable.
+  e.g.  export AGENT_NAME=codex
 ```
-
-> Installed at /tmp/myapp/.git/hooks/pre-commit. Commits that include someone else's claimed files now stop. Give each agent a distinct `AGENT_NAME` environment variable.
 
 ```console
-$ AGENT_NAME=agent-b git commit -m "결제 검증 추가"
-커밋을 멈췄습니다. 남이 잡고 있는 파일이 섞였습니다.
-  src/payment.ts  ←  agent-a (src/payment.ts, 28분 남음)
+$ AGENT_NAME=agent-b git commit -m "add payment validation"
+Commit stopped. It includes files someone else is holding.
+  src/payment.ts  ←  agent-a (src/payment.ts, 29m left)
 
-해결 방법
-  1. 상대가 끝낼 때까지 기다린다
-  2. 해당 파일만 커밋에서 빼고 나머지를 올린다
-  3. 정말 넘겨받아야 하면  agentlock claim <경로> -a agent-b --force
+What to do
+  1. Wait for them to finish
+  2. Unstage that file and commit the rest
+  3. If you truly must take it over:  agentlock claim <path> -a agent-b --force
 ```
-
-> Commit stopped — it includes files someone else holds. Options: (1) wait for them to finish, (2) unstage that file and commit the rest, (3) if you truly must take over, `agentlock claim <path> -a agent-b --force`.
 
 **6. Release when you're done**
 
 ```console
 $ agentlock release -a agent-a --all
-해제  src/order.ts
-해제  src/payment.ts
+RELEASED  src/order.ts
+RELEASED  src/payment.ts
 ```
 
 **7. Everything that happened is on record**
 
 ```console
 $ agentlock log
-2026-08-14 01:29:21  확보  agent-a      src/payment.ts
-2026-08-14 01:29:21  확보  agent-a      src/order.ts
-2026-08-14 01:30:33  해제  agent-a      src/order.ts
-2026-08-14 01:30:33  해제  agent-a      src/payment.ts
+2026-08-14 15:22:44  CLAIM  agent-a      src/payment.ts
+2026-08-14 15:22:44  CLAIM  agent-a      src/order.ts
+2026-08-14 15:22:44  RELEASE  agent-a      src/order.ts
+2026-08-14 15:22:44  RELEASE  agent-a      src/payment.ts
 ```
 
-> 확보 = claimed, 연장 = renewed, 해제 = released, 만료 = expired, 강제회수 = force-taken.
+## Interface language
+
+Messages come out in English or Korean. Set `AGENTLOCK_LANG` to `en` or `ko`:
+
+```bash
+export AGENTLOCK_LANG=en
+```
+
+Leave it unset and the tool follows your environment. A Korean locale gets Korean; anything else gets English. Lines with no translation fall back to the original, so nothing breaks if you edit the table. The table itself is the `EN` dict at the bottom of `agentlock.py` — change the wording to match how your team talks and the tool keeps working.
+
+What gets written to `locks.json` and `audit.jsonl` is the same in either language, so two people on different settings still share one set of records.
 
 ## Commands
 
@@ -191,7 +189,7 @@ TTLs look like `30m`, `2h`, `90s`, `1d`. **A bare number means minutes** — `-t
 
 ```console
 $ agentlock claim src/payment.ts -a agent-a -t 15m
-연장  src/payment.ts  (15분)
+RENEWED  src/payment.ts  (15m)
 ```
 
 Your own locks never count as conflicts. For long jobs, just call the same command again periodically. `claimed_at` (when you first took it) is preserved; only the expiry moves.
@@ -208,8 +206,8 @@ So the default is 30 minutes, and expired locks are swept on the next command. T
 
 ```console
 $ agentlock status
-잡혀 있는 파일이 없습니다.
-(1건이 만료되어 자동 해제됐습니다)
+Nothing is being held.
+(1 expired lock was released automatically)
 ```
 
 > No files held. (1 lock expired and was released automatically.)
@@ -223,7 +221,7 @@ The short TTL is a deliberate trade. Work that runs past 30 minutes has to call 
 `.agentlock/audit.jsonl` only ever appends, one event per line. There is no code path that edits or deletes it.
 
 ```json
-{"ts": "2026-08-14T01:29:21+00:00", "action": "claim", "pid": 11921, "path": "src/payment.ts", "agent": "agent-a", "ttl": 1800, "note": "결제 API 리팩터링"}
+{"ts": "2026-08-14T01:29:21+00:00", "action": "claim", "pid": 11921, "path": "src/payment.ts", "agent": "agent-a", "ttl": 1800, "note": "payment API refactor"}
 {"ts": "2026-08-14T01:30:33+00:00", "action": "release", "pid": 11934, "path": "src/payment.ts", "agent": "agent-a"}
 ```
 
@@ -231,13 +229,13 @@ Five event types are recorded: `claim`, `renew`, `release`, `expire`, `steal`. `
 
 ```console
 $ agentlock claim src/api/routes.ts -a a2 -t 10m --force
-강제 회수: src/api (a1 → a2)
-확보  src/api/routes.ts  (10분)
+Taken by force: src/api (a1 → a2)
+CLAIMED  src/api/routes.ts  (10m)
 
 $ agentlock log
-2026-08-14 01:25:59  확보  a1           src/api
-2026-08-14 01:25:59  확보  a2           src/api/routes.ts
-2026-08-14 01:25:59  강제회수  a2           src/api  (a1 로부터)
+2026-08-14 01:25:59  CLAIM   a1           src/api
+2026-08-14 01:25:59  CLAIM   a2           src/api/routes.ts
+2026-08-14 01:25:59  STEAL   a2           src/api  (from a1)
 ```
 
 `--force` isn't blocked, but it always leaves a trace. If there's no escape hatch when someone is in a hurry, people stop using the tool entirely. Better to allow the override and make "who overrode this, and when?" a 30-second lookup.
@@ -371,7 +369,7 @@ One practical note: agents forget rules. Don't rely on the prompt alone — inst
 If `locks.json` isn't valid JSON, it isn't silently ignored. It's moved to `locks.json.corrupt`, a warning is printed, and state restarts empty — silent failure is the most dangerous outcome here.
 
 ```
-경고: 락 파일이 깨져서 <저장소>/.agentlock/locks.json.corrupt 로 옮기고 새로 시작합니다.
+Warning: the lock file was corrupt, so it was moved to <repo>/.agentlock/locks.json.corrupt and started fresh.
 ```
 
 > Warning: the lock file was corrupt, so it was moved to `<repo>/.agentlock/locks.json.corrupt` and state was reset.
@@ -383,7 +381,7 @@ The broken file is kept as `.corrupt` rather than deleted, so you can open it la
 It's reclaimed automatically after 30 seconds. If you can't wait, delete the path shown in the message.
 
 ```
-다른 프로세스가 .agentlock 를 잡고 있습니다. 계속 이러면 <path>/.agentlock/.guard 를 지우세요.
+Another process is holding .agentlock. If it persists, delete <path>/.agentlock/.guard.
 ```
 
 > Another process is holding .agentlock. If this persists, delete `<path>/.agentlock/.guard`.
@@ -393,8 +391,8 @@ It's reclaimed automatically after 30 seconds. If you can't wait, delete the pat
 `install-hook` refuses to overwrite it and exits with code 1.
 
 ```
-이미 pre-commit 훅이 있습니다: <path>/.git/hooks/pre-commit
-덮어쓰려면 --force 를 쓰세요.
+A pre-commit hook already exists: <path>/.git/hooks/pre-commit
+Use --force to overwrite it.
 ```
 
 > A pre-commit hook already exists at `<path>/.git/hooks/pre-commit`. Use `--force` to overwrite.

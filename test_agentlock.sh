@@ -13,6 +13,11 @@
 
 set -uo pipefail
 
+# 아래 검사들은 화면에 나오는 한국어 문구를 그대로 찾습니다.
+# 그래서 검사 동안에는 언어를 한국어로 고정합니다.
+# 영어 화면은 맨 끝에서 따로 봅니다.
+export AGENTLOCK_LANG=ko
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 AGENTLOCK_PY="${AGENTLOCK_PY:-$SCRIPT_DIR/agentlock.py}"
 
@@ -389,6 +394,52 @@ wait
 wins="$(find "$RES" -name 'win.*' | wc -l | tr -d ' ')"
 check 1 "$wins" "동시성: 같은 경로를 노린 $N 개 중 정확히 1개만 성공"
 check 1 "$(lock_count)" "동시성: 경합 후에도 락은 1건만 존재"
+
+# =============================================================== 영어 화면
+
+ENDIR="$(mktemp -d)"
+cd "$ENDIR" || exit 2
+git init -q .; git config user.email a@b.c; git config user.name t
+mkdir -p src; echo x > src/a.ts; git add -A >/dev/null 2>&1; git commit -qm init >/dev/null 2>&1
+
+ENOUT="$ENDIR/en.txt"
+{
+    env AGENTLOCK_LANG=en NO_COLOR=1 "$PY" "$AGENTLOCK_PY" init
+    env AGENTLOCK_LANG=en NO_COLOR=1 "$PY" "$AGENTLOCK_PY" claim src/a.ts -a a1 -t 30m -n work
+    env AGENTLOCK_LANG=en NO_COLOR=1 "$PY" "$AGENTLOCK_PY" claim src/a.ts -a a2 -t 10m
+    env AGENTLOCK_LANG=en NO_COLOR=1 "$PY" "$AGENTLOCK_PY" claim src/a.ts -a a2 -t 10m --force
+    env AGENTLOCK_LANG=en NO_COLOR=1 "$PY" "$AGENTLOCK_PY" status
+    env AGENTLOCK_LANG=en NO_COLOR=1 "$PY" "$AGENTLOCK_PY" who src/a.ts
+    env AGENTLOCK_LANG=en NO_COLOR=1 "$PY" "$AGENTLOCK_PY" log
+    env AGENTLOCK_LANG=en NO_COLOR=1 "$PY" "$AGENTLOCK_PY" install-hook
+    env AGENTLOCK_LANG=en NO_COLOR=1 "$PY" "$AGENTLOCK_PY" release -a a2 --all
+    env AGENTLOCK_LANG=en NO_COLOR=1 "$PY" "$AGENTLOCK_PY" --help
+} > "$ENOUT" 2>&1
+
+EN_KR="$("$PY" - "$ENOUT" <<'PYEOF'
+import io, re, sys
+t = io.open(sys.argv[1], encoding="utf-8", errors="replace").read()
+t = re.sub(r"\x1b\[[0-9;]*m", "", t)
+print(sum(1 for l in t.split("\n") if re.search(r"[가-힣]", l)))
+PYEOF
+)"
+
+check 0 "$(grep -c Traceback "$ENOUT")" "영어: 예외가 나지 않는다"
+check 0 "$EN_KR" "영어: 화면에 한글이 새지 않는다"
+check 1 "$(grep -q 'CLAIMED' "$ENOUT" && echo 1 || echo 0)" "영어: 영어 문구가 나온다"
+check 1 "$(grep -q 'Taken by force' "$ENOUT" && echo 1 || echo 0)" "영어: 강제 회수도 영어로 나온다"
+
+env AGENTLOCK_LANG=ko NO_COLOR=1 "$PY" "$AGENTLOCK_PY" status > "$ENDIR/ko.txt" 2>&1
+KO_KR="$("$PY" - "$ENDIR/ko.txt" <<'PYEOF'
+import io, re, sys
+t = io.open(sys.argv[1], encoding="utf-8", errors="replace").read()
+print(1 if re.search(r"[가-힣]", t) else 0)
+PYEOF
+)"
+check 1 "$KO_KR" "영어: 같은 저장소를 한국어로 열면 한국어가 나온다"
+
+cd / || true
+rm -rf "$ENDIR"
 
 # =================================================================== 결과
 cd / || true

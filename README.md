@@ -2,7 +2,7 @@
 
 여러 AI 코딩 에이전트가 같은 파일을 동시에 고쳐 작업이 날아가는 걸 막습니다.
 
-의존성 0, 파이썬 3.8+, 단일 파일 657줄. [English](README.en.md)
+의존성 0, 파이썬 3.8+, 단일 파일 657줄. 한국어·영어 지원. [English](README.en.md)
 
 이 저장소의 도구는 **MIT, 무료**입니다. 그대로 쓰셔도 됩니다.
 배포·승인·완료 보고까지 규율을 걸어야 하신다면 유료판 **agentlock pro** 가 따로 있습니다 — [플랜과 가격 보기](https://gachi-dev.github.io/agentlock/) · [차이가 뭔가요](#이-도구가-강제하지-않는-것)
@@ -384,6 +384,18 @@ agentlock check -a "${AGENT_NAME:-$(git config user.name)}" || exit 1
 ```
 
 경로를 비우면 `git diff --cached` 로 staged 파일을 알아서 봅니다.
+
+## 화면 언어
+
+한국어와 영어로 나옵니다. `AGENTLOCK_LANG` 에 `en` 또는 `ko` 를 주면 됩니다.
+
+```bash
+export AGENTLOCK_LANG=en
+```
+
+정하지 않으면 쓰는 환경의 언어를 따라갑니다. 한국어 환경이면 한국어로 나옵니다. 번역이 없는 문장은 원문이 그대로 나오므로, 번역표를 고쳐도 도구가 멈추지 않습니다. 번역표는 `agentlock.py` 맨 아래 `EN` 에 그대로 있습니다. 팀에서 쓰는 말투로 바꿔 쓰셔도 됩니다.
+
+`locks.json` 과 `audit.jsonl` 에 쌓이는 내용은 언어와 무관하게 같습니다. 팀원마다 언어 설정이 달라도 같은 기록을 봅니다.
 
 ## 테스트
 
