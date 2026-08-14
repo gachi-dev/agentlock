@@ -2,7 +2,7 @@
 
 Stops multiple AI coding agents from editing the same file at once and silently destroying each other's work.
 
-Zero dependencies, Python 3.8+, a single 657-line file. [한국어](README.md)
+Zero dependencies, Python 3.8+, a single 771-line file. [한국어](README.md)
 
 The tool in this repository is **MIT and free**. It is fine on its own.
 If you also need discipline around deploys, approvals, and completion reports, there is a paid **agentlock pro** — [plans and pricing](https://gachi-dev.github.io/agentlock/) · [what's different](#what-this-tool-does-not-enforce)
