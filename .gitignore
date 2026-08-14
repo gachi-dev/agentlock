@@ -1,0 +1,29 @@
+# agentlock 자체 상태
+# locks.json 과 audit.jsonl 은 일부러 커밋합니다. 팀이 같이 봐야 의미가 있습니다.
+.agentlock/.guard
+.agentlock/*.tmp
+.agentlock/*.corrupt
+
+# 테스트 스크립트가 남길 수 있는 것
+/tmp-test/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# 에디터 / OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
