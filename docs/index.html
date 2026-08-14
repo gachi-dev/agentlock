@@ -589,6 +589,86 @@ footer .copy{margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);f
   </div>
 </section>
 
+<!-- ===================== EVIDENCE ===================== -->
+<section id="evidence">
+  <div class="wrap">
+    <p class="eyebrow">저만 겪는 일이 아닙니다</p>
+    <h2 class="sec">이 문제는 만든 회사가 먼저 인정했습니다</h2>
+    <p class="lede">
+      Anthropic 이 Claude Code 공식 문서에 이렇게 적어 두었습니다.
+      문제는 인정하는데, 내놓은 해법은 <b>사람이 알아서 나누라는 것</b>뿐입니다.
+    </p>
+
+    <div class="thesis">
+      <div>
+        <h3>Claude Code · Agent Teams 문서</h3>
+        <div class="split">
+          <span class="chip">공식 문서</span>
+          <span class="chip">해법은 수동 규율</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          &ldquo;두 팀원이 같은 파일을 편집하면 <b>덮어쓰기가 발생한다.</b>
+          각자 다른 파일을 맡도록 일을 쪼개라.&rdquo;
+        </p>
+        <p>
+          쪼개라는 말은 맞습니다. 문제는 그걸 사람이 매번 기억해야 한다는 것입니다.
+          에이전트가 셋, 넷으로 늘고 세션이 길어지면 기억은 반드시 틉니다.
+          이 도구는 그 &ldquo;알아서&rdquo;를 코드로 옮긴 것입니다.
+        </p>
+      </div>
+    </div>
+
+    <ul class="cause">
+      <li>
+        <h3>손상 파일 315개</h3>
+        <p>동시 세션 충돌로 일주일 동안 파일 315개가 깨진 사례가 이슈로 올라와 있습니다. <a href="https://github.com/anthropics/claude-code/issues/28813" target="_blank" rel="noopener">claude-code #28813</a></p>
+      </li>
+      <li>
+        <h3>남의 작업을 되돌림</h3>
+        <p>한 에이전트가 다른 에이전트의 변경을 되돌린다는 보고입니다. 쓰는 사람은 원인을 한참 뒤에 압니다. <a href="https://github.com/openai/codex/issues/10681" target="_blank" rel="noopener">openai/codex #10681</a></p>
+      </li>
+      <li>
+        <h3>나중 것이 항상 이김</h3>
+        <p>나중 변경이 이전 것을 항상 덮어쓴다는 디스커션입니다. 직원 포함 세 명이 재현을 확인했습니다. <a href="https://github.com/orgs/community/discussions/163388" target="_blank" rel="noopener">github #163388</a></p>
+      </li>
+    </ul>
+
+    <div class="thesis">
+      <div>
+        <h3>&ldquo;git worktree 쓰면 되지 않나요&rdquo;</h3>
+        <div class="split">
+          <span class="chip">브랜치를 나눌 땐 worktree 가 맞습니다</span>
+          <span class="chip">한 브랜치는 git 이 막습니다</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          맞습니다. 에이전트마다 브랜치를 갈라 병렬로 가실 거면 worktree 가 정답이고,
+          이 도구는 그걸 대체하지 않습니다. 같이 쓰셔도 서로 방해하지 않습니다.
+        </p>
+        <p>
+          다만 worktree 가 구조적으로 못 하는 자리가 있습니다.
+          <b>git 은 같은 브랜치를 두 번 체크아웃하지 못하게 막습니다.</b>
+          브랜치 정보가 worktree 사이에 공유되기 때문이고 우회로가 없습니다.
+          그런데 한 체크아웃을 여럿이 공유하는 상황은 이미 흔합니다.
+          Claude Code 의 Agent Teams 와 서브에이전트가 그렇고,
+          한 저장소에 팀원들이 각자 에이전트를 붙이는 경우도 그렇습니다.
+          거기가 이 도구의 자리입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="plans-foot">
+      <p><b>못 하는 것도 적어 둡니다.</b> 파일 단위라 같은 파일의 다른 함수를 만지는 두 에이전트도 막습니다. 큰 파일이 많은 저장소에서는 불필요하게 순서를 기다리게 됩니다.</p>
+      <p>권고형 락입니다. 선언을 건너뛰고 편집기로 바로 고치면 막지 못합니다. 그래서 git 훅이 2차 방어선인데, 이것도 <code>--no-verify</code> 로 우회됩니다. 막는 대상은 <b>정직하게 일하다 실수하는 경우</b>이지 작정하고 뚫는 경우가 아닙니다.</p>
+      <p>서로 다른 파일에서 생기는 의미적 충돌은 잡지 못합니다. 그건 테스트와 검수의 몫입니다.</p>
+      <p>그리고 이 도구는 &ldquo;더 많이 병렬로 돌리라&rdquo;고 권하지 않습니다. 작은 작업이면 하나씩 순서대로 하는 편이 빠릅니다. <b>이미 여럿을 돌리고 계신 분들의 사고를 막는 용도</b>입니다.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ===================== COST STRUCTURE ===================== -->
 <section id="cost">
   <div class="wrap">
