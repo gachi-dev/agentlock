@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>AI 개발 비용 줄이는 셋업 — 생성은 값싼 모델, 검수는 상위 모델</title>
-<meta name="description" content="AI 개발 비용은 대부분 코드 생성에서 나갑니다. 생성을 로컬·값싼 모델로 내리고 검수만 상위 모델에 남기면 월 30만원이 6만원이 됩니다. 값싼 쪽을 믿을 수 있게 만드는 운영 규율 9가지와 셋업 키트.">
-<meta property="og:title" content="AI 개발 비용을 내리는 셋업 키트">
+<title>에이전트를 여럿 붙여도 서로 안 덮어씁니다 — 그리고 비용은 1/5로</title>
+<meta name="description" content="AI 코딩 에이전트를 둘 이상 돌리면 같은 파일을 서로 덮어씁니다. 오류도 흔적도 없이 작업이 사라집니다. agentlock 은 건드릴 파일을 먼저 선언하게 하고, 남이 잡은 파일이 섞인 커밋을 막습니다. 여기에 생성은 값싼 모델·검수는 상위 모델로 나누는 운영 규율 9가지까지. 무료판은 MIT 오픈소스.">
+<meta property="og:title" content="에이전트 여럿이 같은 파일을 덮어쓰는 것을 막습니다">
 <meta property="og:description" content="생성은 값싼 쪽으로, 검수만 위에. 월 30만원이 6만원, 연 288만원 절감. 값싼 모델을 실전에 투입할 수 있게 만드는 규율 9가지.">
 <meta property="og:type" content="website">
 <style>
@@ -548,24 +548,31 @@ footer .copy{margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);f
   <div class="wrap hero-grid">
     <div>
       <span class="tag"><span class="pulse"></span>에이전트 8종 · <span class="js-days">55</span>일째 무중단 가동 중</span>
-      <h1>생성은 값싼 쪽으로, 검수만 위로. <span class="u">월 30만원이 6만원</span>이 됩니다.</h1>
+      <h1>에이전트 둘이 <span class="u">같은 파일을 덮어씁니다.</span><br>git 은 알려주지 않습니다.</h1>
       <p class="sub">
-        AI 개발 비용은 대부분 코드를 <b>쓰는</b> 쪽에서 나갑니다. 출력 토큰이 많기 때문입니다.
-        읽고 판단만 하는 검수는 출력이 짧아 훨씬 쌉니다.
-        그래서 생성을 로컬 모델이나 값싼 모델로 내리고 검수·설계만 상위 모델이 맡으면 청구서가 내려갑니다.
-        걸리는 건 하나입니다. 값싼 쪽을 혼자 두면 결과를 믿을 수가 없습니다. 이 도구는 거기를 붙잡습니다.
+        터미널 두 개를 띄웁니다. 왼쪽이 <code>payment.ts</code> 를 다시 씁니다.
+        3분 뒤 오른쪽이 <b>20분 전에 읽어둔 낡은 버전</b>에 자기 코드를 붙여 같은 파일에 저장합니다.
+        커밋 전이라 충돌도 안 납니다. 둘 다 "완료했습니다"라고 보고합니다.
+        <b>왼쪽의 15분이 사라진 걸 아무도 모릅니다.</b>
+        에이전트가 셋, 넷으로 늘면 이건 가끔이 아니라 자주 일어납니다.
+      </p>
+      <p class="sub">
+        agentlock 은 규칙 하나를 강제합니다. <b>건드릴 파일을 먼저 선언하고, 남이 선언한 파일은 건드리지 않는다.</b>
+        선언 없이 커밋하면 git 훅이 막습니다. 누가 언제 무엇을 잡았고 누가 뺏었는지가 전부 기록에 남습니다.
+        <b>무료판은 MIT 오픈소스</b>입니다. 유료판은 여기에 배포·승인·완료 보고까지 코드로 강제하고,
+        생성은 값싼 모델·검수는 상위 모델로 나눠 <b>월 30만원을 6만원으로</b> 내립니다.
       </p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="#calc">
-          내 비용으로 계산해보기
+        <a class="btn btn-primary" href="https://github.com/gachi-dev/agentlock" target="_blank" rel="noopener">
+          <svg class="ico" aria-hidden="true"><use href="#i-github"></use></svg>
+          무료로 먼저 써보기 · MIT
+        </a>
+        <a class="btn btn-ghost" href="#calc">
+          비용이 얼마나 줄지 계산해보기
           <svg class="ico" aria-hidden="true"><use href="#i-arrow"></use></svg>
         </a>
-        <a class="btn btn-ghost" href="https://github.com/gachi-dev/agentlock" target="_blank" rel="noopener">
-          <svg class="ico" aria-hidden="true"><use href="#i-github"></use></svg>
-          무료 도구 받기 · agentlock
-        </a>
       </div>
-      <p class="cta-note">위 금액은 월 API 30만원, 생성 비중 80%, 생성을 로컬로 내렸을 때의 계산값입니다. 가정은 계산기 아래에 그대로 적어 두었습니다.</p>
+      <p class="cta-note">무료판은 파일 하나, 의존성 없음, 파이썬 3.8 이상이면 바로 돕니다. 한국어와 영어를 모두 지원합니다. 아래 금액은 월 API 30만원·생성 비중 80%·생성을 로컬로 내렸을 때의 계산값이고, 가정은 계산기 아래에 그대로 적어 두었습니다.</p>
     </div>
 
     <aside class="proof" aria-label="비용 계산 예시">
