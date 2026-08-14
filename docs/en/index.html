@@ -1,0 +1,1839 @@
+<!DOCTYPE html>
+<html lang="en" data-start="2026-06-20">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Run several agents without them overwriting each other — and cut the bill to a fifth</title>
+<meta name="description" content="Run two or more AI coding agents and they overwrite the same file. No error, no trace, the work is just gone. agentlock makes every agent declare the files it is about to touch and blocks any commit that carries someone else's files. On top of that, nine operating disciplines that let cheap models do the writing while a stronger model reviews. The free edition is MIT open source.">
+<meta property="og:title" content="Stop your agents from overwriting the same file">
+<meta property="og:description" content="Cheap models generate, the strong model reviews. $200 a month becomes $40 — $1,920 saved a year. Nine disciplines that make a cheap model safe to put on real work.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gachi-dev.github.io/agentlock/en/">
+<meta property="og:site_name" content="agentlock">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Stop parallel AI coding agents from overwriting each other">
+<meta name="twitter:description" content="Agents declare the files they touch. A git hook blocks commits containing files someone else holds. Zero dependencies, single Python file, MIT.">
+<meta name="keywords" content="AI coding agents, multi agent coding, file locking, git hooks, Claude Code, Cursor, Codex, agentic coding, agent orchestration, parallel AI agents, agent file conflict, git worktree alternative">
+<meta name="author" content="Wooil Song">
+<link rel="canonical" href="https://gachi-dev.github.io/agentlock/en/">
+<link rel="alternate" hreflang="ko" href="https://gachi-dev.github.io/agentlock/">
+<link rel="alternate" hreflang="en" href="https://gachi-dev.github.io/agentlock/en/">
+<link rel="alternate" hreflang="x-default" href="https://gachi-dev.github.io/agentlock/en/">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "agentlock",
+      "alternateName": "agentlock pro",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Linux, macOS, Windows",
+      "description": "File-level locking that stops parallel AI coding agents from overwriting each other's work. Agents declare the files they are about to touch; a conflicting claim is refused, and a git pre-commit hook blocks commits containing files another agent holds. Locks expire so a dead agent does not wedge the repository, and every claim, release and forced takeover is recorded in an append-only, hash-chained ledger committed alongside the code.",
+      "url": "https://gachi-dev.github.io/agentlock/en/",
+      "downloadUrl": "https://github.com/gachi-dev/agentlock",
+      "softwareVersion": "1.3.0",
+      "inLanguage": [
+        "en",
+        "ko"
+      ],
+      "license": "https://opensource.org/licenses/MIT",
+      "author": {
+        "@type": "Person",
+        "name": "Wooil Song"
+      },
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "agentlock (free core)",
+          "price": "0",
+          "priceCurrency": "USD",
+          "category": "free",
+          "url": "https://github.com/gachi-dev/agentlock"
+        },
+        {
+          "@type": "Offer",
+          "name": "agentlock pro Solo",
+          "price": "29",
+          "priceCurrency": "USD",
+          "url": "https://gachi-dev.github.io/agentlock/en/#pricing"
+        },
+        {
+          "@type": "Offer",
+          "name": "agentlock pro Team",
+          "price": "79",
+          "priceCurrency": "USD",
+          "url": "https://gachi-dev.github.io/agentlock/en/#pricing"
+        },
+        {
+          "@type": "Offer",
+          "name": "agentlock pro Business",
+          "price": "199",
+          "priceCurrency": "USD",
+          "url": "https://gachi-dev.github.io/agentlock/en/#pricing"
+        }
+      ],
+      "featureList": [
+        "File ownership locks with TTL",
+        "Git pre-commit and pre-push hooks",
+        "Agent-to-agent messaging (crew talk)",
+        "Handoff between agents",
+        "Completion reports that require unverified items",
+        "Approval gates for deploys and risky paths",
+        "Append-only hash-chained ledger",
+        "Cost routing between local and premium models"
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How is this different from git worktrees?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "If your agents work on separate branches, worktrees are the right tool and agentlock does not replace them. Git refuses to check out the same branch twice, so several agents sharing one branch is outside what worktrees can do. A shared checkout is exactly what Claude Code Agent Teams and subagents give you. The two compose fine."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it work with Claude Code, Cursor and Codex?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. It is a CLI with no dependencies, so any agent that can run a shell command can call it. Agents only need to read the exit code of the claim command."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What does it not do?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Locking is per file, so two agents editing different functions in one large file still serialize. It is advisory: an agent that never calls claim is not stopped, and the git hook can be bypassed with --no-verify. Semantic conflicts across different files are not caught."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is it available in English?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Set AGENTLOCK_LANG to en or ko; leave it unset and it follows the system locale. The manual, quick start, license guide and the full document kit ship in both languages."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>
+/* ============================================================
+   Tokens — light is the base, dark is selected (not flipped)
+   ============================================================ */
+:root{
+  color-scheme: light;
+  --page:#f9f9f7;
+  --surface:#fcfcfb;
+  --surface-2:#f3f2ee;
+  --ink:#0b0b0b;
+  --ink-2:#52514e;
+  --muted:#706d6a;          /* darker step of the palette gray so small text clears 4.5:1 */
+  --rule:#e1e0d9;
+  --line:#c3c2b7;
+  --accent:#2a78d6;         /* mark / fill */
+  --accent-text:#184f95;    /* accent as text (7.9:1 on surface) */
+  --accent-soft:#e8f0fc;
+  --track:#9dc2ef;          /* meter track — lighter step of the same blue ramp (ΔE 24.4 vs accent) */
+  --btn:#256abf;            /* white text = 5.4:1 */
+  --btn-hover:#1c5cab;
+  --btn-ink:#ffffff;
+  --ring:rgba(11,11,11,.10);
+  --shadow:0 1px 2px rgba(11,11,11,.05);
+  --maxw:1120px;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --page:#0d0d0d;
+    --surface:#1a1a19;
+    --surface-2:#222220;
+    --ink:#ffffff;
+    --ink-2:#c3c2b7;
+    --muted:#93918a;
+    --rule:#2c2c2a;
+    --line:#383835;
+    --accent:#3987e5;
+    --accent-text:#86b6ef;  /* 8.3:1 on dark surface */
+    --accent-soft:#14243a;
+    --track:#2f5583;        /* meter track — dark-mode step, chosen not flipped (ΔE 19.3 vs accent) */
+    --btn:#86b6ef;
+    --btn-hover:#9ec5f4;
+    --btn-ink:#0b0b0b;      /* 9.4:1 */
+    --ring:rgba(255,255,255,.12);
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d;
+  --surface:#1a1a19;
+  --surface-2:#222220;
+  --ink:#ffffff;
+  --ink-2:#c3c2b7;
+  --muted:#93918a;
+  --rule:#2c2c2a;
+  --line:#383835;
+  --accent:#3987e5;
+  --accent-text:#86b6ef;
+  --accent-soft:#14243a;
+  --track:#2f5583;
+  --btn:#86b6ef;
+  --btn-hover:#9ec5f4;
+  --btn-ink:#0b0b0b;
+  --ring:rgba(255,255,255,.12);
+  --shadow:none;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--page);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",system-ui,"Segoe UI",sans-serif;
+  font-size:16px;
+  line-height:1.7;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *{transition:none !important;animation:none !important}
+}
+h1,h2,h3,h4{line-height:1.32;margin:0;letter-spacing:-.015em;font-weight:650}
+p{margin:0}
+ul,ol{margin:0;padding:0;list-style:none}
+a{color:var(--accent-text);text-decoration:none}
+a:hover{text-decoration:underline;text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+svg{display:block}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+@media (min-width:800px){.wrap{padding:0 32px}}
+.skip{position:absolute;left:-9999px;top:0;background:var(--surface);padding:10px 14px;border:1px solid var(--line);z-index:99}
+.skip:focus{left:8px;top:8px}
+
+/* section rhythm */
+section{padding:clamp(48px,7vw,88px) 0;border-top:1px solid var(--rule);scroll-margin-top:66px}
+section:first-of-type{border-top:0}
+.eyebrow{
+  font-size:12.5px;font-weight:650;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:9px;
+}
+.eyebrow::before{content:"";width:22px;height:2px;background:var(--accent);border-radius:1px;flex:none}
+h2.sec{font-size:clamp(23px,3.4vw,32px);max-width:22ch;margin-bottom:14px}
+.lede{color:var(--ink-2);font-size:clamp(15px,1.6vw,17px);max-width:62ch}
+.hr{height:1px;background:var(--rule);border:0;margin:0}
+
+/* ============================================================
+   Header
+   ============================================================ */
+header.top{
+  position:sticky;top:0;z-index:40;
+  background:color-mix(in srgb, var(--page) 88%, transparent);
+  backdrop-filter:saturate(120%) blur(8px);
+  border-bottom:1px solid var(--rule);
+}
+@supports not (backdrop-filter: blur(2px)){header.top{background:var(--page)}}
+.topbar{display:flex;align-items:center;gap:14px;height:58px}
+.brand{display:flex;align-items:baseline;gap:9px;font-weight:650;font-size:15px;color:var(--ink);letter-spacing:-.02em;white-space:nowrap}
+.brand:hover{text-decoration:none}
+.brand .dot{width:9px;height:9px;border-radius:2px;background:var(--accent);flex:none;transform:translateY(-1px)}
+.brand small{font-weight:500;font-size:12px;color:var(--muted);letter-spacing:0}
+@media (max-width:640px){.topbar .brand{font-size:14px}.topbar .brand small{display:none}}
+nav.main{margin-left:auto;display:none;gap:22px}
+@media (min-width:940px){nav.main{display:flex}}
+nav.main a{color:var(--ink-2);font-size:14px;font-weight:550}
+nav.main a:hover{color:var(--ink);text-decoration:none}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+@media (min-width:940px){.top-actions{margin-left:22px}}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font:inherit;font-weight:600;font-size:15px;line-height:1;
+  padding:13px 20px;border-radius:7px;border:1px solid transparent;
+  cursor:pointer;text-align:center;transition:background-color .12s ease,border-color .12s ease,color .12s ease;
+}
+.btn:hover{text-decoration:none}
+.btn-primary{background:var(--btn);color:var(--btn-ink)}
+.btn-primary:hover{background:var(--btn-hover)}
+.btn-ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.btn-ghost:hover{background:var(--surface-2);border-color:var(--ink-2)}
+.btn-sm{padding:9px 14px;font-size:13.5px;border-radius:6px}
+.btn-block{width:100%}
+.icobtn{
+  width:36px;height:36px;padding:0;border-radius:7px;border:1px solid var(--rule);
+  background:var(--surface);color:var(--ink-2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.icobtn:hover{border-color:var(--line);color:var(--ink)}
+.ico{width:16px;height:16px;flex:none}
+.ico-sm{width:14px;height:14px}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero{padding:clamp(44px,6.5vw,80px) 0 clamp(40px,5vw,64px)}
+.hero-grid{display:grid;gap:clamp(28px,4vw,52px)}
+@media (min-width:960px){.hero-grid{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);align-items:start}}
+.tag{
+  display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;
+  color:var(--accent-text);background:var(--accent-soft);border:1px solid var(--ring);
+  padding:6px 11px;border-radius:999px;margin-bottom:20px;letter-spacing:-.01em;
+}
+.tag .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+h1{font-size:clamp(29px,5.2vw,50px);letter-spacing:-.03em;line-height:1.22;max-width:17ch;font-weight:700}
+h1 .u{
+  background:linear-gradient(transparent 62%, var(--accent-soft) 62%);
+  box-shadow:inset 0 -2px 0 var(--accent);
+}
+.hero p.sub{margin-top:20px;font-size:clamp(15.5px,1.8vw,18px);color:var(--ink-2);max-width:52ch}
+.cta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.cta-note{margin-top:12px;font-size:13px;color:var(--muted)}
+
+/* hero proof card */
+.proof{
+  background:var(--surface);border:1px solid var(--rule);border-radius:12px;
+  padding:clamp(18px,2.4vw,24px);box-shadow:var(--shadow);
+}
+.proof h3{font-size:13px;font-weight:650;color:var(--muted);letter-spacing:.02em;margin-bottom:2px}
+.proof .src{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+.proof dl{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;margin:0}
+.proof dt{font-size:12.5px;color:var(--ink-2);margin-bottom:2px}
+.proof dd{margin:0;font-size:clamp(21px,3vw,26px);font-weight:650;letter-spacing:-.02em;line-height:1.15}
+.proof dd .unit{font-size:.62em;font-weight:600;color:var(--ink-2);margin-left:2px}
+.proof .foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--muted)}
+
+/* ============================================================
+   Pain list
+   ============================================================ */
+.pain{display:grid;gap:12px;margin-top:32px}
+@media (min-width:720px){.pain{grid-template-columns:1fr 1fr;gap:12px 20px}}
+.pain li{
+  display:flex;gap:12px;align-items:flex-start;
+  background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:15px 16px;
+}
+.pain li .ico{color:var(--muted);margin-top:4px}
+.pain li span{font-size:14.5px;color:var(--ink)}
+.pain-foot{margin-top:26px;font-size:15px;color:var(--ink-2);border-left:2px solid var(--accent);padding-left:16px;max-width:58ch}
+
+/* ============================================================
+   Cause
+   ============================================================ */
+.cause{display:grid;gap:22px;margin-top:34px}
+@media (min-width:780px){.cause{grid-template-columns:repeat(3,1fr);gap:28px}}
+.cause li{border-top:2px solid var(--accent);padding-top:14px}
+.cause h3{font-size:16.5px;margin-bottom:7px}
+.cause p{font-size:14.5px;color:var(--ink-2)}
+
+/* positioning strip */
+.thesis{
+  margin-top:38px;background:var(--surface);border:1px solid var(--rule);border-radius:12px;
+  padding:clamp(20px,3vw,30px);display:grid;gap:18px;
+}
+@media (min-width:820px){.thesis{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:center;gap:32px}}
+.thesis h3{font-size:clamp(19px,2.6vw,25px);letter-spacing:-.02em}
+.thesis p{font-size:15px;color:var(--ink-2)}
+.thesis .split{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.chip{font-size:12.5px;font-weight:600;color:var(--ink-2);border:1px solid var(--rule);background:var(--surface-2);padding:5px 10px;border-radius:6px}
+
+/* ============================================================
+   Stat tiles (dataviz: KPI row — label / value / note)
+   ============================================================ */
+.tiles{display:grid;gap:12px;margin-top:32px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+@media (min-width:760px){.tiles{grid-template-columns:repeat(auto-fit,minmax(238px,1fr))}}
+.tile{
+  background:var(--surface);border:1px solid var(--rule);border-radius:10px;
+  padding:16px 16px 15px;position:relative;
+}
+.tile::before{content:"";position:absolute;left:16px;top:0;width:26px;height:2px;background:var(--accent);border-radius:0 0 2px 2px}
+.tile .lab{font-size:12.5px;color:var(--ink-2);margin-bottom:6px}
+.tile .val{font-size:clamp(26px,3.6vw,32px);font-weight:650;letter-spacing:-.025em;line-height:1.1;color:var(--ink)}
+.tile .val .unit{font-size:.55em;font-weight:600;color:var(--ink-2);margin-left:3px;letter-spacing:0}
+.tile .note{margin-top:7px;font-size:12.5px;color:var(--muted)}
+
+/* uptime strip — one tick = one day */
+.uptime-card{margin-top:22px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:clamp(16px,2.4vw,22px)}
+.uptime-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin-bottom:16px}
+.uptime-head h3{font-size:15.5px}
+.uptime-head .meta{font-size:12.5px;color:var(--muted)}
+.uptime{display:flex;align-items:flex-end;gap:2px;height:46px;border-bottom:1px solid var(--line);padding-bottom:0}
+.uptime i{flex:1 1 0;min-width:3px;height:100%;background:var(--accent);border-radius:3px 3px 0 0;display:block}
+.uptime-axis{display:flex;justify-content:space-between;margin-top:9px;font-size:12px;color:var(--muted)}
+.uptime-cap{margin-top:14px;font-size:13px;color:var(--ink-2)}
+.disclose{margin-top:20px;font-size:13px;color:var(--muted);max-width:80ch}
+
+/* ============================================================
+   Output-token price bars (dataviz: one measure, one series →
+   one color, no legend; 4px rounded data-end, square at baseline)
+   ============================================================ */
+.tokbars{margin-top:32px;background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:clamp(18px,2.6vw,24px)}
+.tokbars h3{font-size:15.5px;margin-bottom:3px}
+.tokbars .cap{font-size:12.5px;color:var(--muted);margin-bottom:20px}
+.tokbars ol{display:grid;gap:15px}
+.tokbars li{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+@media (min-width:560px){.tokbars li{grid-template-columns:132px minmax(0,1fr) 74px;gap:12px;align-items:center}}
+.tokbars .who{font-size:13.5px;color:var(--ink-2)}
+.tokbars .track{border-left:1px solid var(--line);padding:2px 0;min-height:18px;display:flex;align-items:center}
+.tokbars .fill{display:block;height:14px;background:var(--accent);border-radius:0 4px 4px 0}
+.tokbars .fill[data-zero]{width:0;height:14px;border-left:2px solid var(--line);border-radius:0}
+.tokbars .amt{font-size:14px;font-weight:650;color:var(--ink);font-variant-numeric:tabular-nums}
+@media (min-width:560px){.tokbars .amt{text-align:right}}
+.tokbars .foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--muted)}
+
+/* ============================================================
+   Cost calculator
+   ============================================================ */
+.calcbox{display:grid;gap:16px;margin-top:32px}
+@media (min-width:920px){.calcbox{grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:22px;align-items:start}}
+.calcpane{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:clamp(18px,2.6vw,24px)}
+.calcpane > h3{font-size:13px;font-weight:650;color:var(--muted);letter-spacing:.02em;margin-bottom:18px}
+.fld + .fld{margin-top:22px}
+.fld .flab{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:9px}
+.fld .flab span{font-size:13.5px;color:var(--ink-2)}
+.fld .flab b{font-size:15.5px;font-weight:650;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+input[type=range]{width:100%;display:block;margin:0;height:26px;accent-color:var(--accent);background:transparent;cursor:pointer}
+.numrow{display:flex;align-items:center;gap:9px;margin-top:11px;flex-wrap:wrap}
+.numrow input[type=number]{
+  font:inherit;font-size:14px;font-weight:600;color:var(--ink);background:var(--page);
+  border:1px solid var(--line);border-radius:7px;padding:9px 11px;width:150px;max-width:100%;
+  font-variant-numeric:tabular-nums;
+}
+.numrow small{font-size:12.5px;color:var(--muted)}
+.seg{display:grid;gap:9px}
+@media (min-width:440px){.seg{grid-template-columns:1fr 1fr}}
+.seg label{
+  display:flex;gap:10px;align-items:flex-start;background:var(--page);
+  border:1px solid var(--line);border-radius:9px;padding:11px 12px;cursor:pointer;
+}
+.seg label:hover{border-color:var(--ink-2)}
+.seg input{margin:4px 0 0;accent-color:var(--accent);flex:none}
+.seg b{display:block;font-size:13.5px;font-weight:650;color:var(--ink)}
+.seg small{display:block;font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
+.seg label:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.seg label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+
+.outs{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin:0}
+.outs > div{background:var(--surface);padding:15px 16px 16px}
+.outs dt{font-size:12.5px;color:var(--ink-2);margin-bottom:5px}
+.outs dd{margin:0;font-size:clamp(23px,3.4vw,29px);font-weight:650;letter-spacing:-.025em;line-height:1.12;color:var(--ink)}
+.outs dd .unit{font-size:.5em;font-weight:600;color:var(--ink-2);margin-left:3px;letter-spacing:0}
+.outs dd .pre{font-size:.5em;font-weight:600;color:var(--ink-2);margin-right:4px;letter-spacing:0}
+
+/* meter — fill = what you still pay, track step = what you save (same blue ramp) */
+.meter{display:flex;gap:2px;height:28px;margin-top:22px}
+.meter i{display:block;height:100%;border-radius:3px;min-width:0}
+.meter .m-pay{background:var(--accent)}
+.meter .m-cut{background:var(--track)}
+.meter-key{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:11px}
+.meter-key span{display:inline-flex;align-items:baseline;gap:8px;font-size:13px;color:var(--ink-2)}
+.meter-key i{width:10px;height:10px;border-radius:2px;flex:none;transform:translateY(1px)}
+.meter-key b{color:var(--ink);font-weight:650;font-variant-numeric:tabular-nums}
+.assume{margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)}
+.assume h4{font-size:12.5px;font-weight:650;color:var(--ink-2);margin-bottom:9px}
+.assume li{font-size:12.5px;color:var(--muted);padding-left:13px;position:relative;line-height:1.62}
+.assume li + li{margin-top:5px}
+.assume li::before{content:"";position:absolute;left:0;top:.72em;width:4px;height:1px;background:var(--line)}
+
+/* ============================================================
+   Command list (role-split setup)
+   ============================================================ */
+.cmds{display:grid;gap:2px;margin-top:32px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+@media (min-width:720px){.cmds{grid-template-columns:1fr 1fr}}
+@media (min-width:1040px){.cmds{grid-template-columns:repeat(3,1fr)}}
+.cmds li{background:var(--surface);padding:18px 18px 20px}
+.cmds .cmd{
+  display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:13px;font-weight:650;color:var(--accent-text);background:var(--accent-soft);
+  border:1px solid var(--ring);padding:3px 9px;border-radius:6px;margin-bottom:11px;
+}
+.cmds h3{font-size:15px;margin-bottom:6px;letter-spacing:-.02em}
+.cmds p{font-size:13.5px;color:var(--ink-2)}
+.split2{display:grid;gap:2px;margin-top:24px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+@media (min-width:640px){.split2{grid-template-columns:1fr 1fr}}
+.split2 > div{background:var(--surface);padding:18px}
+.split2 h4{font-size:14.5px;margin-bottom:3px}
+.split2 .sub{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+.split2 ul{display:flex;flex-wrap:wrap;gap:6px}
+
+/* ============================================================
+   Disciplines
+   ============================================================ */
+.rules{display:grid;gap:2px;margin-top:32px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+@media (min-width:700px){.rules{grid-template-columns:1fr 1fr}}
+@media (min-width:1040px){.rules{grid-template-columns:repeat(3,1fr)}}
+.rules li{background:var(--surface);padding:18px 18px 20px}
+.rules .n{
+  font-size:12px;font-weight:700;color:var(--accent-text);letter-spacing:.04em;
+  display:inline-block;margin-bottom:8px;font-variant-numeric:tabular-nums;
+}
+.rules h3{font-size:15.5px;margin-bottom:6px;letter-spacing:-.02em}
+.rules p{font-size:13.5px;color:var(--ink-2)}
+.rules-foot{margin-top:22px;font-size:14px;color:var(--ink-2);max-width:64ch}
+
+/* ============================================================
+   Free tool
+   ============================================================ */
+.free{
+  margin-top:30px;background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:clamp(20px,3vw,28px);display:grid;gap:18px;
+}
+@media (min-width:840px){.free{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:32px}}
+.free .k{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.free code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:15px;font-weight:650;
+  color:var(--ink);background:var(--surface-2);border:1px solid var(--rule);padding:3px 9px;border-radius:6px;
+}
+.free .price{font-size:12.5px;font-weight:650;color:var(--accent-text);background:var(--accent-soft);border-radius:5px;padding:3px 9px}
+.free p{font-size:14.5px;color:var(--ink-2)}
+/* inline command name inside running text */
+.plan ul li code,.proof .src code,.faq .a code,.rules-foot code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.9em;font-weight:650;color:var(--accent-text);background:var(--accent-soft);
+  border-radius:5px;padding:1px 6px;white-space:nowrap;
+}
+
+/* ============================================================
+   Pricing
+   ============================================================ */
+.plans{display:grid;gap:14px;margin-top:26px;grid-template-columns:1fr}
+@media (min-width:700px){.plans{grid-template-columns:1fr 1fr}}
+@media (min-width:1040px){.plans{grid-template-columns:repeat(4,1fr)}}
+.plan{
+  background:var(--surface);border:1px solid var(--rule);border-radius:12px;
+  padding:22px 20px;display:flex;flex-direction:column;position:relative;
+}
+.plan.featured{border-color:var(--accent);border-width:1.5px;padding-top:26px}
+.badge{
+  position:absolute;top:-10px;left:20px;background:var(--btn);color:var(--btn-ink);
+  font-size:11.5px;font-weight:700;letter-spacing:.03em;padding:4px 10px;border-radius:5px;
+}
+.plan .name{font-size:15px;font-weight:650;letter-spacing:-.01em}
+.plan .meta{font-size:12.5px;color:var(--muted);margin-top:2px}
+.plan .price{
+  font-size:clamp(25px,3.2vw,29px);font-weight:700;letter-spacing:-.03em;margin:14px 0 4px;line-height:1.1;
+}
+.plan .price small{font-size:13.5px;font-weight:550;color:var(--ink-2);letter-spacing:0;margin-left:4px}
+.plan .pay{
+  font-size:12.5px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);
+  border:1px solid var(--ring);border-radius:7px;padding:8px 10px;margin:10px 0 14px;line-height:1.5;
+}
+.plan .desc{font-size:13.5px;color:var(--ink-2);margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--rule)}
+.plan ul{display:grid;gap:9px;margin-bottom:22px}
+.plan ul li{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;color:var(--ink)}
+.plan ul li .ico-sm{color:var(--accent);margin-top:5px}
+.plan .go{margin-top:auto}
+.plans-foot{margin-top:18px;display:grid;gap:6px;font-size:13px;color:var(--muted)}
+
+/* ============================================================
+   FAQ
+   ============================================================ */
+.faq{margin-top:30px;border-top:1px solid var(--rule)}
+.faq details{border-bottom:1px solid var(--rule)}
+.faq summary{
+  cursor:pointer;list-style:none;padding:18px 40px 18px 0;position:relative;
+  font-size:15.5px;font-weight:600;color:var(--ink);
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{
+  content:"";position:absolute;right:8px;top:50%;width:9px;height:9px;
+  border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);
+  transform:translateY(-70%) rotate(45deg);transition:transform .15s ease;
+}
+.faq details[open] summary::after{transform:translateY(-30%) rotate(225deg)}
+.faq summary:hover{color:var(--accent-text)}
+.faq .a{padding:0 0 20px;font-size:14.5px;color:var(--ink-2);max-width:70ch}
+.faq .a p + p{margin-top:10px}
+
+/* ============================================================
+   Buy / contact
+   ============================================================ */
+.buy{display:grid;gap:16px;margin-top:30px}
+@media (min-width:880px){.buy{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:24px}}
+.steps{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:clamp(20px,3vw,26px)}
+.steps ol{display:grid;gap:18px;counter-reset:s}
+.steps ol li{display:grid;grid-template-columns:26px 1fr;gap:13px;align-items:start}
+.steps ol li::before{
+  counter-increment:s;content:counter(s);
+  width:26px;height:26px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);
+  font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;
+}
+.steps h3{font-size:15px;margin-bottom:3px}
+.steps p{font-size:13.5px;color:var(--ink-2)}
+.steps .note{margin-top:20px;padding-top:16px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--muted)}
+.acct{background:var(--surface-2);border:1px solid var(--rule);border-radius:12px;padding:clamp(20px,3vw,26px)}
+.acct h3{font-size:14px;color:var(--ink-2);margin-bottom:14px}
+.acct dl{display:grid;gap:12px;margin:0}
+.acct dt{font-size:12.5px;color:var(--muted)}
+.acct dd{margin:0;font-size:15px;font-weight:600;color:var(--ink)}
+.ph{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;font-weight:600;
+  color:var(--accent-text);background:var(--accent-soft);border:1px dashed var(--ring);
+  padding:2px 7px;border-radius:5px;white-space:nowrap;
+}
+/* payment / contact details: solid border + background so they don't read as placeholders */
+#buy .ph,#faq .ph,#withdraw .ph{border-style:solid;border-color:var(--line);max-width:100%;white-space:normal}
+.acct .warn{margin-top:16px;padding-top:14px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-2)}
+
+/* copy-to-clipboard button */
+.copy-acct{
+  display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px 9px;
+  cursor:pointer;line-height:1.5;text-align:left;
+}
+.copy-acct:hover{border-color:var(--accent);background:var(--surface)}
+.copy-acct .cp{
+  font-family:inherit;font-size:11.5px;font-weight:650;color:var(--muted);
+  letter-spacing:.01em;flex:none;
+}
+.copy-acct:hover .cp{color:var(--accent-text)}
+
+/* plan summary chips */
+.codes{margin-top:16px;padding-top:14px;border-top:1px solid var(--rule)}
+.codes h4{font-size:13px;color:var(--ink-2);margin-bottom:10px}
+.codes ul{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.codes .chip b{color:var(--accent-text);font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.codes p{font-size:12.5px;color:var(--muted)}
+.codes p + p{margin-top:6px}
+.codes p b{color:var(--ink-2);font-weight:650}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+footer{background:var(--surface);border-top:1px solid var(--rule);padding:38px 0 44px}
+.foot-grid{display:grid;gap:22px}
+@media (min-width:800px){.foot-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:40px}}
+footer .biz{display:grid;gap:7px;font-size:12.5px;color:var(--muted)}
+footer .biz div{display:flex;flex-wrap:wrap;gap:4px 10px}
+footer .biz b{font-weight:600;color:var(--ink-2)}
+footer .copy{margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to main content</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 16 16"><path d="M8 3v6M8 12.2v.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".45"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M3 8h9M8.5 4.2L12.3 8l-3.8 3.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-github" viewBox="0 0 16 16"><path fill="currentColor" d="M8 .2a8 8 0 00-2.5 15.6c.4.1.5-.2.5-.4v-1.4c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.2 1.9.9 2.4.7.1-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-3.9 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.6 7.6 0 014 0c1.5-1 2.2-.8 2.2-.8.5 1.1.2 1.9.1 2.1.5.5.8 1.2.8 2.1 0 3-1.8 3.7-3.6 3.9.3.3.6.8.6 1.6v2.3c0 .2.1.5.5.4A8 8 0 008 .2z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.1" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2L3.1 3.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 16 16"><path d="M13.5 9.6A5.8 5.8 0 016.4 2.5a5.9 5.9 0 107.1 7.1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap topbar">
+    <a class="brand" href="#top"><span class="dot"></span>Multi-agent operating discipline <small>Day <span class="js-days">55</span> in production</small></a>
+    <nav class="main" aria-label="Main sections">
+      <a href="#cost">Cost structure</a>
+      <a href="#calc">Calculator</a>
+      <a href="#rules">The nine disciplines</a>
+      <a href="#setup">Role split</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="top-actions">
+      <a class="btn btn-ghost btn-sm" href="./" hreflang="ko" lang="ko">한국어</a>
+      <button class="icobtn" id="theme" type="button" aria-label="Switch between light and dark">
+        <svg class="ico" id="theme-ico" aria-hidden="true"><use href="#i-moon"></use></svg>
+      </button>
+      <a class="btn btn-primary btn-sm" href="#pricing">See pricing</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+<a id="top"></a>
+
+<!-- ===================== HERO ===================== -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="tag"><span class="pulse"></span>8 agents · running <span class="js-days">55</span> days without a break</span>
+      <h1>Two agents <span class="u">overwrite the same file.</span><br>git will not tell you.</h1>
+      <p class="sub">
+        You have two terminals open. The one on the left rewrites <code>payment.ts</code>.
+        Three minutes later the one on the right pastes its own work onto <b>the stale copy it read twenty minutes ago</b> and saves over the same file.
+        Nothing has been committed yet, so git raises no conflict. Both agents report back that they are done.
+        <b>Fifteen minutes of the left-hand agent's work is gone and nobody knows it.</b>
+        Add a third and a fourth agent and this stops being an occasional thing.
+      </p>
+      <p class="sub">
+        agentlock enforces exactly one rule. <b>Declare the files you are about to touch, and keep off the files someone else has declared.</b>
+        Commit without declaring and a git hook stops you. Who claimed what, when, and who took it away is all on the record.
+        <b>The free edition is MIT open source.</b> The paid edition puts deploys, approvals and completion reports under the same enforcement, and
+        splits the work so cheap models generate while a stronger model reviews — which takes <b>$200 a month down to $40</b>.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/gachi-dev/agentlock" target="_blank" rel="noopener">
+          <svg class="ico" aria-hidden="true"><use href="#i-github"></use></svg>
+          Try the free edition first · MIT
+        </a>
+        <a class="btn btn-ghost" href="#calc">
+          See what it would save you
+          <svg class="ico" aria-hidden="true"><use href="#i-arrow"></use></svg>
+        </a>
+      </div>
+      <p class="cta-note">The free edition is one file, no dependencies, and runs anywhere with Python 3.8 or newer. English and Korean are both supported. The figures below assume $200 a month in API spend, 80% of it going to generation, with generation moved onto a local model — every assumption is written out under the calculator.</p>
+    </div>
+
+    <aside class="proof" aria-label="Worked cost example">
+      <h3>Worked example · $200 a month before</h3>
+      <p class="src">With the 80% generation share moved local · output of the built-in <code>cost</code> command</p>
+      <dl>
+        <div><dt>New monthly cost</dt><dd>$40</dd></div>
+        <div><dt>Saved per month</dt><dd>$160</dd></div>
+        <div><dt>Saved per year</dt><dd>$1,920</dd></div>
+        <div><dt>Subscription pays back in</dt><dd>5<span class="unit">days</span></dd></div>
+      </dl>
+      <p class="foot">There are conditions. Moving generation local needs hardware behind it (32GB of memory or more is the practical floor), and the generation share differs from team to team. Put your own numbers in and see.</p>
+    </aside>
+  </div>
+</section>
+
+<!-- ===================== EVIDENCE ===================== -->
+<section id="evidence">
+  <div class="wrap">
+    <p class="eyebrow">This is not just my problem</p>
+    <h2 class="sec">The company that builds these tools documented it first</h2>
+    <p class="lede">
+      Anthropic states it plainly in the Claude Code documentation.
+      They acknowledge the problem; the remedy they offer is <b>for a person to split the work up and remember to keep it that way</b>.
+    </p>
+
+    <div class="thesis">
+      <div>
+        <h3>Claude Code · Agent Teams documentation</h3>
+        <div class="split">
+          <span class="chip">Official docs</span>
+          <span class="chip">Remedy: manual discipline</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          &ldquo;If two teammates edit the same file, <b>you get overwrites.</b>
+          Split the work so each one owns different files.&rdquo;
+        </p>
+        <p>
+          Splitting the work is the right answer. The problem is that a human has to remember it every single time.
+          With three or four agents and sessions that run for hours, memory gives out — not if, but when.
+          This tool takes that &ldquo;just remember to&rdquo; and moves it into code.
+        </p>
+      </div>
+    </div>
+
+    <ul class="cause">
+      <li>
+        <h3>315 corrupted files</h3>
+        <p>A week of concurrent-session collisions left 315 files broken, filed as an issue. <a href="https://github.com/anthropics/claude-code/issues/28813" target="_blank" rel="noopener">claude-code #28813</a></p>
+      </li>
+      <li>
+        <h3>One agent undoes another</h3>
+        <p>A report of one agent reverting another agent's changes. The person using it finds out long after the fact. <a href="https://github.com/openai/codex/issues/10681" target="_blank" rel="noopener">openai/codex #10681</a></p>
+      </li>
+      <li>
+        <h3>Last write always wins</h3>
+        <p>A discussion on later changes silently overwriting earlier ones. Three people, staff included, confirmed the repro. <a href="https://github.com/orgs/community/discussions/163388" target="_blank" rel="noopener">github #163388</a></p>
+      </li>
+    </ul>
+
+    <div class="thesis">
+      <div>
+        <h3>&ldquo;Doesn't git worktree already solve this?&rdquo;</h3>
+        <div class="split">
+          <span class="chip">For separate branches, worktree is right</span>
+          <span class="chip">For one shared branch, git refuses</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          It does, and this tool is not a replacement for it. If you are giving each agent its own branch and running them in parallel,
+          worktree is the correct answer. Run both together and they stay out of each other's way.
+        </p>
+        <p>
+          There is one place worktree structurally cannot reach.
+          <b>git will not let you check out the same branch twice.</b>
+          Branch state is shared between worktrees, and there is no way around it.
+          Yet several agents sharing a single checkout is already the ordinary case.
+          Claude Code's Agent Teams and subagents work that way,
+          and so does a team where each person points their own agent at one repository.
+          That gap is where this tool sits.
+        </p>
+      </div>
+    </div>
+
+    <div class="plans-foot">
+      <p><b>What it cannot do, stated plainly.</b> Locking is per file, so two agents working on different functions inside the same file will still block each other. In a repository full of large files that means waiting in line for no good reason.</p>
+      <p>The locks are advisory. Skip the declaration, open the file in an editor and edit it directly, and nothing stops you. The git hook is the second line of defence, and that can be bypassed with <code>--no-verify</code>. What this stops is <b>an honest mistake made by someone doing the work properly</b>, not someone determined to get around it.</p>
+      <p>Semantic conflicts across different files are out of scope. Those belong to your tests and your reviewer.</p>
+      <p>And this is not an argument for running more agents in parallel. For small jobs, one at a time is faster. This exists to keep the people <b>already running several</b> out of trouble.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== COST STRUCTURE ===================== -->
+<section id="cost">
+  <div class="wrap">
+    <p class="eyebrow">Cost structure</p>
+    <h2 class="sec">What costs money is volume, not judgement</h2>
+    <p class="lede">Almost all of the bill comes from output tokens. Writing new code produces a lot of output; reading it and pointing out what is wrong produces very little. The same task lands differently on the invoice depending on who does it.</p>
+
+    <ul class="cause">
+      <li>
+        <h3>Generation is long output</h3>
+        <p>Writing one file from scratch costs thousands of tokens. So does refactoring, so does writing tests. This is where the money goes.</p>
+      </li>
+      <li>
+        <h3>Review is short output</h3>
+        <p>Reading code and answering "this part is wrong" is a few lines of output. The input may be long, but input is cheap next to output pricing.</p>
+      </li>
+      <li>
+        <h3>So splitting them brings it down</h3>
+        <p>Send the volume work to the cheap side and keep only the judgement upstairs. Move it onto local hardware and the token cost on that side goes to zero.</p>
+      </li>
+    </ul>
+
+    <div class="tokbars">
+      <h3>Price per million output tokens</h3>
+      <p class="cap">Bar length is the price. Same volume generated, different amount billed.</p>
+      <ol>
+        <li>
+          <span class="who">Frontier model</span>
+          <span class="track"><span class="fill" style="width:100%"></span></span>
+          <span class="amt">$25</span>
+        </li>
+        <li>
+          <span class="who">Cheap remote model</span>
+          <span class="track"><span class="fill" style="width:20%"></span></span>
+          <span class="amt">$5</span>
+        </li>
+        <li>
+          <span class="who">Local model</span>
+          <span class="track"><span class="fill" data-zero="1"></span></span>
+          <span class="amt">$0</span>
+        </li>
+      </ol>
+      <p class="foot">
+        Per million output tokens. The gap between a frontier model and a cheap remote one is five to one.
+        Local means zero token cost — electricity and the hardware itself are not in that number.
+        Input tokens are priced separately and are usually cheaper.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CALCULATOR ===================== -->
+<section id="calc">
+  <div class="wrap">
+    <p class="eyebrow">Cost calculator</p>
+    <h2 class="sec">Put your own numbers in</h2>
+    <p class="lede">It updates as you move the controls. Nothing is stored and nothing is sent to a server. The arithmetic happens inside this page.</p>
+
+    <div class="calcbox">
+      <div class="calcpane">
+        <h3>Inputs</h3>
+
+        <div class="fld">
+          <label class="flab" for="c-spend"><span>What you spend on API calls per month</span><b id="c-spend-out">$200</b></label>
+          <input type="range" id="c-spend" min="0" max="1000" step="10" value="200">
+          <div class="numrow">
+            <input type="number" id="c-spend-num" min="0" max="100000" step="10" value="200" aria-label="Enter your monthly API spend in US dollars">
+            <small>US dollars · type an exact figure if you prefer</small>
+          </div>
+        </div>
+
+        <div class="fld">
+          <label class="flab" for="c-gen"><span>How much of that is code generation</span><b id="c-gen-out">80%</b></label>
+          <input type="range" id="c-gen" min="0" max="100" step="5" value="80">
+          <div class="numrow"><small>It varies by team. If you are not sure, leave it at the default 80%.</small></div>
+        </div>
+
+        <div class="fld">
+          <p class="flab"><span>Where generation moves to</span></p>
+          <div class="seg">
+            <label>
+              <input type="radio" name="c-target" value="local" checked>
+              <span><b>Local model</b><small>$0 in token cost. Needs hardware behind it</small></span>
+            </label>
+            <label>
+              <input type="radio" name="c-target" value="cheap">
+              <span><b>Cheap remote model</b><small>About a fifth of the price. No hardware needed</small></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="calcpane">
+        <h3>Result</h3>
+        <dl class="outs">
+          <div><dt>New monthly cost</dt><dd id="o-new">$40</dd></div>
+          <div><dt>Saved per month</dt><dd id="o-save">$160</dd></div>
+          <div><dt>Saved per year</dt><dd id="o-year">$1,920</dd></div>
+          <div><dt>Subscription pays back in</dt><dd id="o-days"><span class="pre">~</span>5<span class="unit">days</span></dd></div>
+        </dl>
+
+        <div class="meter" id="c-meter" role="img" aria-label="Of $200 a month, $40 still goes out and $160 is cut">
+          <i class="m-pay" id="m-pay" style="width:calc(20% - 1px)"></i>
+          <i class="m-cut" id="m-cut" style="width:calc(80% - 1px)"></i>
+        </div>
+        <div class="meter-key">
+          <span><i class="m-pay"></i>New monthly cost <b id="k-pay">$40</b></span>
+          <span><i class="m-cut"></i>Cut from the bill <b id="k-cut">$160</b></span>
+        </div>
+
+        <div class="assume">
+          <h4>How this is calculated · assumptions</h4>
+          <ul>
+            <li>The share you set as generation moves to the cheaper side. The rest — review, design, judgement — stays on the frontier model.</li>
+            <li>Local is counted as $0 in token cost. Electricity and hardware purchase are not included.</li>
+            <li>Cheap remote is figured at one fifth: $25 against $5 per million output tokens.</li>
+            <li>Payback is the Solo subscription of $29 ÷ (monthly saving ÷ 30 days). It assumes the daily saving holds steady.</li>
+            <li>At the default 80% the bill drops to a fifth. A team at 90% generation moving all of it local gets to a tenth. A lower share means a proportionally smaller cut.</li>
+            <li>Weaker generation means rework. That time is not in this calculation.</li>
+          </ul>
+        </div>
+        <p class="sr" role="status" aria-live="polite" id="c-live"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== REVENUE ===================== -->
+<section id="revenue">
+  <div class="wrap">
+    <p class="eyebrow">It is not only about saving</p>
+    <h2 class="sec">Work you used to turn down starts to add up</h2>
+    <p class="lede">When the cost floor drops, you do not just keep more of the money. The range of jobs you can quote on gets wider.</p>
+
+    <div class="thesis">
+      <div>
+        <h3>What is left of a $600 job once the AI bill comes out</h3>
+        <div class="split">
+          <span class="chip">AI $200 → $400 left</span>
+          <span class="chip">AI $40 → $560 left</span>
+          <span class="chip">Difference $160 · about five developer-hours</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          Say you take a $600 job. If the AI costs $200 you are left with $400, and once you price in your own hours there is not much reason to accept it.
+          The same job with $40 of AI leaves $560. That $160 difference is roughly five hours of developer time at a $30-an-hour blended rate.
+          This is not an argument for cutting your rate to win more work. It is that jobs you used to turn down because the arithmetic did not work now do.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PAIN ===================== -->
+<section id="pain">
+  <div class="wrap">
+    <p class="eyebrow">So why isn't everyone doing this already</p>
+    <h2 class="sec">Because a cheap model left alone gives you no way to know what it did</h2>
+    <p class="lede">Everything below actually happened while running several agents for <span class="js-days">55</span> days. The more work you hand to the cheap side, the more often it happens.</p>
+
+    <ul class="pain">
+      <li><svg class="ico" aria-hidden="true"><use href="#i-alert"></use></svg><span>Agent A fixed a file. Agent B put the whole thing back to an older version.</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-alert"></use></svg><span>Two agents changed the same function in two different ways, and both reported it done.</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-alert"></use></svg><span>Something that worked yesterday is broken today, and there is no record of who touched what, or when.</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-alert"></use></svg><span>Every new window the agent behaves like a different person, so you explain the whole thing from scratch again.</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-alert"></use></svg><span>One agent deployed, another deployed on top of it, and the rollback order came apart.</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-alert"></use></svg><span>An agent goes quiet mid-task and someone has to pick it up, with no way to tell how far it got.</span></li>
+    </ul>
+
+    <p class="pain-foot">
+      The cost here is not the lost code. It is the time a person spends re-checking "is the current state the correct state?" over and over.
+      So most people give up on the cheap side and push everything through the expensive model — paying more rather than trusting something they cannot verify.
+      The nine disciplines below aim at exactly that point. Once what was done, what was skipped and what was touched are all on the record, the cheap side becomes safe to give work to.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== WHY ===================== -->
+<section id="why">
+  <div class="wrap">
+    <p class="eyebrow">Why it happens</p>
+    <h2 class="sec">Not because the models are bad, but because three things are missing</h2>
+    <p class="lede">Each agent only sees its own task. Give it no way to see what the one beside it is doing and the more diligent the agent, the more it overwrites.</p>
+
+    <ul class="cause">
+      <li>
+        <h3>No ownership</h3>
+        <p>Every agent can write every file. With no boundaries, a collision is not an accident. It is a matter of time.</p>
+      </li>
+      <li>
+        <h3>No ordering</h3>
+        <p>Work starts without being announced. Two agents discover they are in the same place only once they are both already in it.</p>
+      </li>
+      <li>
+        <h3>No memory</h3>
+        <p>When the conversation window ends, the context goes with it. The next agent sees only the code that is left and guesses at the rest.</p>
+      </li>
+    </ul>
+
+    <div class="thesis">
+      <div>
+        <h3>Thin code, thick discipline</h3>
+        <div class="split">
+          <span class="chip">4,250 lines of operations code</span>
+          <span class="chip">90-line sync server</span>
+          <span class="chip">$0 a month to run</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          Try to solve this with a large framework and you have bought yourself a second job: maintaining the framework.
+          What actually held up for <span class="js-days">55</span> days was not code, it was discipline. The code was kept to the minimum needed to enforce it.
+          So what is for sale here is not code. It is nine disciplines that survived running a real service.
+          With those standing, the output of a cheap model becomes usable — and only then does the arithmetic above hold.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PROOF ===================== -->
+<section id="proof">
+  <div class="wrap">
+    <p class="eyebrow">Track record</p>
+    <h2 class="sec">Records instead of claims</h2>
+    <p class="lede">The numbers below accumulated inside a live commercial service in production. This is not an environment built for a demo.</p>
+
+    <ul class="tiles">
+      <li class="tile">
+        <p class="lab">Uninterrupted operation</p>
+        <p class="val"><span class="js-days">55</span><span class="unit">days</span></p>
+        <p class="note">20 Jun 2026 to now, still running</p>
+      </li>
+      <li class="tile">
+        <p class="lab">Agents running at once</p>
+        <p class="val">8</p>
+        <p class="note">Roles fixed and kept separate</p>
+      </li>
+      <li class="tile">
+        <p class="lab">Messages between agents</p>
+        <p class="val">1,990</p>
+        <p class="note">About 36 a day</p>
+      </li>
+      <li class="tile">
+        <p class="lab">Automated meeting records</p>
+        <p class="val">960</p>
+        <p class="note">Unattended standing meetings · about 17 a day</p>
+      </li>
+      <li class="tile">
+        <p class="lab">Handover documents</p>
+        <p class="val">32</p>
+        <p class="note">Written every time ownership changes</p>
+      </li>
+      <li class="tile">
+        <p class="lab">Total operations code</p>
+        <p class="val">4,250<span class="unit">lines</span></p>
+        <p class="note">Plus a 90-line cloud sync server</p>
+      </li>
+      <li class="tile">
+        <p class="lab">Monthly running cost</p>
+        <p class="val">$0</p>
+        <p class="note">No paid infrastructure behind it</p>
+      </li>
+    </ul>
+
+    <div class="uptime-card">
+      <div class="uptime-head">
+        <h3>Days in operation</h3>
+        <span class="meta">One tick is one day. Not a single day missing between the start and today.</span>
+      </div>
+      <div class="uptime" id="uptime" role="img" aria-label="One bar for each of the 55 days from 20 June 2026 to today, showing it ran every day">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <div class="uptime-axis"><span>Started 20 Jun 2026</span><span>Today · running</span></div>
+      <p class="uptime-cap">A day it stopped would show up as a gap here. There are no gaps yet.</p>
+    </div>
+
+    <p class="disclose">
+      The company and the service are not named. It is a live service, and naming it would mean disclosing its internals along with it.
+      The numbers and the disciplines are published; the identity is not. If that trade does not sit right with you, do not buy.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== RULES ===================== -->
+<section id="rules">
+  <div class="wrap">
+    <p class="eyebrow">The nine disciplines</p>
+    <h2 class="sec">Nine mechanisms that make a cheap model safe to put on real work</h2>
+    <p class="lede">
+      What you need in order to hand work to the cheap side is not a smarter model. It is a mechanism that forces a record of what was done.
+      Leave the unverified field empty and the completion report is rejected. Touch a file outside your assigned area and the commit is blocked. Anything hard to undo does not move without a human approving it.
+      All nine titles are published right here, because there is no reason to hide them. The hard part was never knowing the titles. It is the procedure that makes them hold every day.
+    </p>
+
+    <ol class="rules">
+      <li><span class="n">DISCIPLINE 01</span><h3>Fixed role separation</h3><p>Every agent gets a fixed area and a fixed tier. The hands that produce volume and the head that makes the calls are never the same agent.</p></li>
+      <li><span class="n">DISCIPLINE 02</span><h3>File ownership plus interface contracts</h3><p>Split which files each side touches and connect them only at agreed seams. Editing across a boundary becomes a change to the contract.</p></li>
+      <li><span class="n">DISCIPLINE 03</span><h3>Mandatory start-of-work declaration</h3><p>State what you are about to do before you touch code. This is the one discipline the free tool, agentlock, already implements in code.</p></li>
+      <li><span class="n">DISCIPLINE 04</span><h3>One deployer, no exceptions</h3><p>Only one agent deploys. Ban cross-deploys and the rollback order stays intact.</p></li>
+      <li><span class="n">DISCIPLINE 05</span><h3>Succession protocol when someone goes dark</h3><p>Define what to read, and in what order, to take over when the other side stops answering. Handled as procedure, not judgement.</p></li>
+      <li><span class="n">DISCIPLINE 06</span><h3>Identity-pinning prompts</h3><p>Pin a self-image to each tier. The hands are told not to decide alone; the head is told not to do volume work itself.</p></li>
+      <li><span class="n">DISCIPLINE 07</span><h3>Completion reports must carry evidence</h3><p>Write down what was verified and what was not. Leave the unverified field empty and the completion report itself is refused.</p></li>
+      <li><span class="n">DISCIPLINE 08</span><h3>Approval gates</h3><p>Deploys, money and database schema changes go through a human. This is where the cheap side is kept out of the rooms that are hard to walk back from.</p></li>
+      <li><span class="n">DISCIPLINE 09</span><h3>Append-only ledger</h3><p>Work done is only ever appended to a hash-linked record. Change or delete a single line and it tells you which line was tampered with.</p></li>
+    </ol>
+
+    <p class="rules-foot">
+      Without these nine standing, you cannot hand work to the cheap side. Output where nobody knows what was done, what was skipped or what was touched has to be reviewed from scratch by a person, and that time costs more than the money saved.
+      The written document for each discipline, the identity-prompt templates for each agent, the handover form and the conflict-response procedure all ship with <a href="#pricing">the pro edition</a> as a document kit. There is nothing extra to buy.
+      The version where a tool enforces the same nine instead of a person remembering them is <a href="#pricing">agentlock pro</a>.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== SETUP / ROLE SPLIT ===================== -->
+<section id="setup">
+  <div class="wrap">
+    <p class="eyebrow">Role-split setup</p>
+    <h2 class="sec">The split between hands and head ships as commands</h2>
+    <p class="lede">These went in recently, and only things that actually work are listed. The split points are already built, so you do not have to design the structure yourself.</p>
+
+    <ul class="cmds">
+      <li>
+        <code class="cmd">setup --preset 4</code>
+        <h3>Split and set it all up in one pass</h3>
+        <p>Splits roles into hands (local) and head (frontier model) in a single command. Assigned areas, the designated deployer, approval points, git hooks and the per-tier identity prompts all come out of this one command.</p>
+      </li>
+      <li>
+        <code class="cmd">env</code>
+        <h3>Check the local runtime</h3>
+        <p>Detects whether Ollama, LM Studio, llama.cpp or vLLM is up. Reads your machine's memory, tells you what model size it can carry, and warns you when a local role is assigned but no runtime is running.</p>
+      </li>
+      <li>
+        <code class="cmd">cost</code>
+        <h3>Work out the saving</h3>
+        <p>Enter what you spend now and your generation share, and it returns the new monthly cost, the monthly saving and the annual saving. Same formula as the calculator further up this page.</p>
+      </li>
+      <li>
+        <code class="cmd">route</code>
+        <h3>Who takes which job</h3>
+        <p>Give it a kind of task and it tells you whether the hands or the head take it. The point is to fix the criteria once so a person is not deciding it every time.</p>
+      </li>
+      <li>
+        <code class="cmd">msg / inbox</code>
+        <h3>The channel between agents</h3>
+        <p>How the cheap side escalates the calls it should not be making alone. What was escalated and what came back both stay on the record, so you can retrace later why a decision went the way it did.</p>
+      </li>
+      <li>
+        <span class="cmd">Generated identity prompts</span>
+        <h3>The wording changes with the tier</h3>
+        <p>The hands get "do not decide on your own." The head gets "do not do volume work yourself." It keeps the cheap side escalating where it should, and keeps the expensive side from burning money on output.</p>
+      </li>
+    </ul>
+
+    <div class="split2">
+      <div>
+        <h4>What the hands take</h4>
+        <p class="sub">Local or cheap remote · the long-output side</p>
+        <ul>
+          <li><span class="chip">Implementation</span></li>
+          <li><span class="chip">Fixes</span></li>
+          <li><span class="chip">Refactoring</span></li>
+          <li><span class="chip">Writing tests</span></li>
+        </ul>
+      </div>
+      <div>
+        <h4>What the head takes</h4>
+        <p class="sub">Frontier model · short output, heavy judgement</p>
+        <ul>
+          <li><span class="chip">Review</span></li>
+          <li><span class="chip">Design</span></li>
+          <li><span class="chip">Deploys</span></li>
+          <li><span class="chip">Schema changes</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="rules-foot">
+      The split criteria live in <code>route</code> and can be changed to suit your team.
+      If you plan to use the local side, run <code>env</code> first and check that your hardware can carry it.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== PRICING ===================== -->
+<section id="pricing">
+  <div class="wrap">
+    <p class="eyebrow">Pricing</p>
+    <h2 class="sec">Start free, and move up only as far as you need to</h2>
+    <p class="lede">
+      It is a subscription. Pay and the licence key and files are issued on the spot — there is no human approval step to wait on.
+      Annual billing is 20% cheaper, and you can cancel yourself from the customer portal at any time.
+      The payback figures below assume a saving of $160 a month ($200 spend, 80% generation share, moved local). For your own numbers, use <a href="#calc">the calculator</a>.
+    </p>
+
+    <div class="free">
+      <div>
+        <div class="k">
+          <code>agentlock</code>
+          <span class="price">Free · open source</span>
+        </div>
+        <p>
+          A CLI that puts discipline 3 — the mandatory start-of-work declaration — into code.
+          It makes an agent declare what it is about to do before touching a file, and blocks it when that overlaps work already claimed.
+          Install it, run it for a single day, and you can see where your collisions are coming from.
+          agentlock pro below is the version that enforces the other eight as well.
+        </p>
+      </div>
+      <a class="btn btn-ghost" href="https://github.com/gachi-dev/agentlock" target="_blank" rel="noopener">
+        <svg class="ico" aria-hidden="true"><use href="#i-github"></use></svg>
+        Get it on GitHub
+      </a>
+    </div>
+
+    <div class="plans">
+      <article class="plan">
+        <p class="name">Solo</p>
+        <p class="meta">One developer · up to 5 machines</p>
+        <p class="price">$29 / mo</p>
+        <p class="pay">$278 a year — two months off. At $160 saved a month it pays for itself in 5 days.</p>
+        <p class="desc">This is not a document you read and try to follow. Break a rule and the commit or the deploy stops right there.</p>
+        <ul>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>The free edition puts 1 of the 9 disciplines into code. The pro edition puts all 9 into code</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>One <code>setup --preset 4</code> splits hands from head — assigned areas, designated deployer, git hook installation and per-tier identity prompts are all generated for you</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span><code>env</code> checks your local runtime and machine memory, <code>cost</code> works out the saving, <code>route</code> shows who takes which job</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>Committing files from someone else's area, completion reports with no evidence, and deploys without approval are all blocked on the spot</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>The record is hash-linked, so changing or deleting even one line tells you exactly which line was tampered with</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>The full discipline document kit is included. Nothing extra to buy</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>No dependencies · Python 3.8 or newer · a single file</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>Scope of use: the one person who subscribes. On any project you work on yourself — personal work, freelance client work, work at the company that employs you — there is no restriction</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>Committing it into a shared team repository, or passing the files to someone else, needs Team or above</span></li>
+        </ul>
+        <a class="btn btn-ghost btn-block go" href="#buy">Start a subscription</a>
+      </article>
+
+      <article class="plan featured">
+        <span class="badge">Recommended</span>
+        <p class="name">Team</p>
+        <p class="meta">One repository · up to 10 developers · 20 machines</p>
+        <p class="price">$79 / mo</p>
+        <p class="pay">$758 a year — two months off. Counting one person's saving alone ($160 a month), it pays back in 15 days.</p>
+        <p class="desc">This is the tier if several of you share one repository. Who did what stops being a memory and becomes a record.</p>
+        <ul>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>Everything in Solo</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>Up to 10 developers on one repository</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>A shared hash-linked ledger, so completion reports can be verified instead of believed</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>Approval gates — one fixed deployer, with approval enforced on deploys, schema changes and anything marked high-risk</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>Handover and inbox — someone else can pick up the work of a teammate who is away</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>Identity prompts that hold each agent to the role it was given</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>Email support</span></li>
+        </ul>
+        <a class="btn btn-primary btn-block go" href="#buy">Start a subscription</a>
+      </article>
+
+      <article class="plan">
+        <p class="name">Business</p>
+        <p class="meta">No limit on repositories, people or machines</p>
+        <p class="price">$199 / mo</p>
+        <p class="pay">$1,910 a year — two months off. On one person's saving alone that is 37 days; across a team it is far shorter.</p>
+        <p class="desc">Once you have several repositories, or you find yourself counting heads, this tier is the cheaper one.</p>
+        <ul>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>Everything in Team</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>No cap on developers, no cap on repositories</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>Priority support — you go to the front of the queue</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>Rollout design help — we work out with you which agent takes what, where the approval gates belong, and how work is divided between the cheap and the frontier model</span></li>
+        </ul>
+        <a class="btn btn-ghost btn-block go" href="#buy">Start a subscription</a>
+      </article>
+    </div>
+
+    <div class="thesis">
+      <div>
+        <h3>All three tiers are the same file. Only the scope of use differs</h3>
+        <div class="split">
+          <span class="chip">20% off annual</span>
+          <span class="chip">Change plan any time</span>
+          <span class="chip">Cancel it yourself</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          Solo, Team and Business ship exactly the same file, with no difference in features. What changes is how many people may use it and across how many repositories.
+          So start small, and when the team grows, move the plan up in the customer portal. Nothing to download again, nothing to reinstall.
+          Cancelling is in the same place and you never have to contact us to do it.
+        </p>
+      </div>
+    </div>
+
+    <div class="plans-foot">
+      <p>Payback is the price divided by the daily saving (monthly saving ÷ 30 days). For Team and Business the figures are deliberately conservative — they count one person's saving only, and shorten as more people use it. If your saving is smaller than the calculator's default, payback takes proportionally longer.</p>
+      <p>The price shown is the price charged. VAT or sales tax is calculated for your country at checkout and shown alongside it. The receipt is emailed automatically the moment payment goes through.</p>
+      <p>The licence key and files are issued the instant you pay. Nothing to wait for. If you change machines, you can release the old device registration yourself in the customer portal.</p>
+      <p><b>English and Korean are both supported.</b> Choose the interface language with <code>AGENTLOCK_LANG</code>; leave it unset and it follows the language of your environment. The documentation ships in English and Korean too.</p>
+      <p>You do not need to ask before buying — just pay. If you are unsure which tier fits, describe your situation instead. Team size and how you use the repository is all we need to point you at the right one.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FAQ ===================== -->
+<section id="faq">
+  <div class="wrap">
+    <p class="eyebrow">Frequently asked</p>
+    <h2 class="sec">The things you are probably about to ask</h2>
+
+    <div class="faq">
+      <details open>
+        <summary>Can a local model actually write decent code?</summary>
+        <div class="a">
+          <p>Not as well as a frontier model. Let me be direct about that. Given the same requirements it misses more of the conditions, and it touches the wrong file more often.</p>
+          <p>That is exactly why review is attached. The structure only works when the head reads what the hands wrote and sends it back. Running local with no review is not something I would recommend — you will spend more time later finding the cause than you saved.</p>
+          <p>Put another way, what this sells is not "cheap models are good." It is "the output of a cheap model becomes checkable." Leave the unverified field empty and the completion report is rejected; files outside your area cannot be committed; what was done stays in a hash-linked record.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What kind of machine do I need?</summary>
+        <div class="a">
+          <p>Memory is the criterion. 16GB is tight — small models will run, but the range of work you can hand over is narrow. From 32GB it becomes genuinely useful, and at 64GB or more you can move most generation work local.</p>
+          <p>Run the <code>env</code> command to see where your machine sits. It detects which of Ollama, LM Studio, llama.cpp or vLLM is up, and tells you from your memory what model size you can carry.</p>
+          <p>If the hardware is not there, use a cheap remote model instead of a local one. The saving is smaller, but there is no hardware requirement at all.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Can I use a cheap remote model instead of a local one?</summary>
+        <div class="a">
+          <p>Yes, and the structure is identical. Generation moves down and review stays up. Whether the bottom is local or a cheap remote API, the disciplines apply the same way.</p>
+          <p>It is not free, though. Per million output tokens it is $25 against $5 — a fifth. On $200 a month with an 80% generation share, local comes to $40 a month and cheap remote to $72. Choose "cheap remote model" in <a href="#calc">the calculator</a> to run it on your own figures.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Does it really come down that much?</summary>
+        <div class="a">
+          <p>It depends on your generation share. The calculator assumes the following: the share you set as generation moves to the cheaper side while the rest stays on the frontier model; local costs $0 in tokens; cheap remote is one fifth; and payback is the price divided by a daily saving that is assumed to hold steady.</p>
+          <p>At the default 80% the bill drops to a fifth. A team at 90% generation moving all of it local gets to a tenth. If you are already mostly reviewing and designing, and your generation share is 30%, the cut is proportionally smaller.</p>
+          <p>What is not in the calculation, stated plainly: electricity, hardware purchase, and the time spent reworking output when generation quality falls short. Which is why I am not asking you to believe the numbers. Put your own into <a href="#calc">the calculator</a>.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Can I get a refund?</summary>
+        <div class="a">
+          <p>Before access is issued, a full refund, always.</p>
+          <p>Once you have it, <b>tell us within 14 days of delivery</b> and we refund without asking why. Write to <span class="ph">zenesisgp500@gmail.com</span> — English enquiries are handled by email. There is also a <a href="https://open.kakao.com/o/gEQitNIi" target="_blank" rel="noopener">KakaoTalk open chat</a>, but it is a Korean-language chat. Customers in South Korea additionally have statutory withdrawal rights, set out under <a href="#withdraw">Cancellation and refunds</a>.</p>
+          <p>If you simply picked the wrong tier, moving up and paying the difference is usually a better outcome than a refund. Either way, we do whichever you prefer.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Our setup is a bit different. Does this still apply?</summary>
+        <div class="a">
+          <p>The disciplines are about boundaries and ordering, not about any particular tool's name. Whatever agent you run, "who writes which file", "where work gets declared" and "who deploys" are all still needed.</p>
+          <p>Repository structure does vary, though. The kit's forms and procedures were written on the assumption that you will adapt them to your structure, and the pro edition has you name the assigned areas, the deployer and the approval points during setup. Different structure, same setup step — you just point it at yours.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Free edition or pro — which one do I need?</summary>
+        <div class="a">
+          <p>Run the free edition for a day and then decide. The free edition puts 1 of the 9 disciplines — the start-of-work declaration — into code. The other 8 are things a person has to remember.</p>
+          <p>The pro edition puts all 9 into code. Files in someone else's area can neither be locked nor committed; leave the "could not verify" field of a completion report empty and the command is refused; a deploy runs only when the one designated person holds a human approval, and that approval is spent once it is used. Nobody has to check whether the rules are being followed.</p>
+          <p>Draw the line roughly here. One person with one agent: the free edition is enough. Two or more agents at once, or sharing a repository with human colleagues: pro.</p>
+          <p>Which pro tier to buy is set out under &ldquo;Which tier should I buy?&rdquo; below.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>How is the pro edition licensed?</summary>
+        <div class="a">
+          <p>It is a subscription with three tiers. All three ship exactly the same file, with no difference in features. What changes is how many people use it and across how many repositories.</p>
+          <p><b>Solo · $29/mo ($278/yr)</b> — one developer. On any project you work on yourself — personal work, freelance client work, work at your employer — there is no restriction. Up to 5 machines can be registered. Committing it into a shared team repository, or handing the files to someone else, is not covered at this tier.</p>
+          <p><b>Team · $79/mo ($758/yr)</b> — up to 10 developers on one repository, with up to 20 machines registered. Commit it into your internal repository and share it with the team, or adapt it to your environment.</p>
+          <p><b>Business · $199/mo ($1,910/yr)</b> — no limit on people or repositories, and unlimited device registrations. Priority support and rollout design help are included.</p>
+          <p>None of the three tiers permits resale, public posting or redistribution to third parties. Taking the files outside your organisation, or bundling them into another product you sell, is not allowed at any tier.</p>
+          <p>The licence key is valid for as long as the subscription is. Cancel and the key is revoked, and under the agreement you delete the copies you hold.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Which tier should I buy?</summary>
+        <div class="a">
+          <p>A one-person company or a freelancer working alone: <b>Solo</b>. It is your own working environment, and using it on projects you have taken on is unrestricted. Once you commit the files into a client's or a team's shared repository for several people to use, that is Team territory.</p>
+          <p>Human colleagues sharing one repository with you: <b>Team</b>. Up to 10 people. Spread across ten, that is under $8 per person a month.</p>
+          <p>Several repositories, or more than 10 people: <b>Business</b> works out cheaper, and you stop counting altogether.</p>
+          <p>If you cannot tell right now, start on Solo. You can move up from the customer portal at any time, and you are only charged for the period you used.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Can I move up to Team or Business later?</summary>
+        <div class="a">
+          <p>Yes. Change the plan in the customer portal. You do not need to contact us.</p>
+          <p>The file is the one you already have. Nothing to download again, nothing to reinstall. Only the licence key changes tier.</p>
+          <p>Billing is prorated for the remaining period, so what you have already paid is not thrown away. Moving back down works the same way, in the same place.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Is this any use if I only run one agent?</summary>
+        <div class="a">
+          <p>About half of it is. The collision disciplines (2, 4 and 8) get less exercise, but start-of-work declarations, identity pinning, verification evidence and handovers all work just as well on your own. The difference shows most when a working session gets cut off and you pick it up again.</p>
+          <p>And if you share a repository with human colleagues, the rest starts earning its keep soon enough.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>How do I pay?</summary>
+        <div class="a">
+          <p>By card. Press the button under <a href="#buy">How to buy</a> below and the checkout opens. All six plans sit on one screen, so you can click between them and compare.</p>
+          <p>There is no need to contact us first. Your email and card details are all it takes. VAT or sales tax is calculated for your country and shown with the total.</p>
+          <p>Payment and receipts are handled by Polar Software, Inc. as the reseller. Your card statement will show the Polar name.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>How do I receive the files?</summary>
+        <div class="a">
+          <p>Straight from the screen the moment payment completes. The licence key and the file download appear together, and the same thing goes out by email.</p>
+          <p>You can return to the customer portal at any time and download again. Changing machines or losing the file is not a problem.</p>
+          <p>When you move to a new machine you can release the old device registration yourself in the portal. No need to contact us.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Do I get documentation I can give to accounting?</summary>
+        <div class="a">
+          <p><b>A receipt is emailed automatically the moment you pay.</b> It is issued in the name of the reseller, Polar Software, Inc., and you can retrieve it from the customer portal at any time.</p>
+          <p>Tick &ldquo;I&rsquo;m purchasing as a business&rdquo; at checkout and you can enter your company details and tax registration number, both of which then appear on the receipt.</p>
+          <p>It is not, however, a Korean statutory tax invoice or cash receipt. If you specifically need those documents, tell us before you buy.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Do I get the actual source?</summary>
+        <div class="a">
+          <p>The free agentlock is published as open source, so take it as it is. agentlock pro is a single Python file, handed over as it is. Every line is visible and you can read it yourself if you want to.</p>
+          <p>The full 4,250 lines of operations code is not for sale, though. That code grew around my environment, and handing it over would not make it run in another team's repository. What has to move is not the code, it is the disciplines — and the part that moves them is what was cut out into the pro edition.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Do I get updates after I buy?</summary>
+        <div class="a">
+          <p>Every revision released while you are subscribed is included, at no extra cost. When a new version lands, take it from the customer portal.</p>
+          <p>Both the discipline documents and the pro edition keep getting corrected as the system keeps running. I do not promise a release cadence, though.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>How long do I have to wait?</summary>
+        <div class="a">
+          <p>You do not. The licence key and files are issued the moment payment completes. There is no human approval step in the way.</p>
+          <p>Plan changes and cancellations are also immediate in the customer portal. Only enquiries are answered by a person — usually within a few hours, and at worst within one business day. If it is urgent, the <a href="https://open.kakao.com/o/gEQitNIi" target="_blank" rel="noopener">KakaoTalk open chat</a> is faster, though it is a Korean-language chat; for English, email is the way.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What happens if I cancel?</summary>
+        <div class="a">
+          <p>One button in the customer portal. No need to contact us, and no reason required.</p>
+          <p><b>Cancelling leaves you everything you have already paid for, until that period ends.</b> After that the licence key is revoked and you are not billed again.</p>
+          <p>On cancellation the licence agreement requires you to delete the copies you hold. The key is revoked and the pro features stop. The free agentlock is open source, so that keeps working.</p>
+          <p>Within 14 days of payment, ask for a refund rather than just cancelling and you get the whole amount back — see <a href="#withdraw">Cancellation and refunds</a>.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Is the tool itself in English?</summary>
+        <div class="a">
+          <p><b>It is.</b> Both the program interface and the documentation are available in English.</p>
+          <p>Set <code>AGENTLOCK_LANG=en</code> to force it. Leave it unset and it follows the language of your environment. Different people on the same team can run it in different languages; the records that accumulate in the repository use the same format regardless, so nothing gets mixed up.</p>
+          <p>The manual, the quick start, the licence guide and the whole document kit ship in English and Korean. An English reference copy of the licence agreement is included as well. Note, though, that <b>the Korean text of the agreement is the governing version</b> and the English is provided to aid understanding.</p>
+          <p>If you find wording that reads badly, tell us. The translation table sits in the source, so you can rewrite it in the phrasing your team uses and the program still runs.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== BUY ===================== -->
+<section id="buy">
+  <div class="wrap">
+    <p class="eyebrow">How to buy</p>
+    <h2 class="sec">Pay, and it is issued on the spot</h2>
+    <p class="lede">There is no need to contact us first. Press the button below, pick a plan at checkout, and the licence key and files come out as soon as payment completes. There is nobody to wait on.</p>
+
+    <div class="buy">
+      <div class="steps">
+        <ol>
+          <li>
+            <div>
+              <h3>Pick a plan at checkout and pay</h3>
+              <p>One link holds all six: Solo, Team and Business, each monthly and annual. Click between them on the screen to compare. Annual takes 20% off. Pay by card, and VAT or sales tax is calculated for your country and shown with the total.</p>
+              <p><b>Payment and receipts are handled by Polar Software, Inc.</b> They act as merchant of record, so your card statement shows the Polar name. The receipt is emailed automatically as soon as payment goes through.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>The licence key and files appear immediately</h3>
+              <p>When payment completes, a licence key in the form <code>AGENTLOCK-XXXX-XXXX-XXXX</code> and the file download appear on that same screen. The same thing goes out by email. You can return to the customer portal at any time to download again, or to release a device registration after changing machines.</p>
+              <p>Registered machines: 5 on Solo, 20 on Team, unlimited on Business. Those numbers allow for replacing a laptop or reinstalling.</p>
+            </div>
+          </li>
+        </ol>
+        <p class="note">If the tier is unclear, ask before you pay. Team size and how you use the repository is all we need to tell you which one fits. Enquiries are usually answered within a few hours, and at worst within one business day. If a day passes with no reply, check your spam folder and then send it again.</p>
+      </div>
+
+      <div class="acct">
+        <h3>Buy now</h3>
+        <p style="margin:0 0 16px">All six plans on one screen. Click through, compare, choose.</p>
+        <a class="btn btn-primary btn-block" href="https://buy.polar.sh/polar_cl_0lorfedMrZKkZVK7nPFzwzQc8BRunHuLcjdeI3veHgI" target="_blank" rel="noopener">
+          Open checkout
+          <svg class="ico" aria-hidden="true"><use href="#i-arrow"></use></svg>
+        </a>
+
+        <div class="codes">
+          <h4>What you can choose at checkout</h4>
+          <ul>
+            <li><span class="chip">Solo <b>$29/mo · $278/yr</b></span></li>
+            <li><span class="chip">Team <b>$79/mo · $758/yr</b></span></li>
+            <li><span class="chip">Business <b>$199/mo · $1,910/yr</b></span></li>
+          </ul>
+          <p>Choosing annual takes two months off. Switching between monthly and annual later is also done in the customer portal.</p>
+        </div>
+
+        <dl>
+          <div><dt>Email</dt><dd><span class="ph">zenesisgp500@gmail.com</span></dd></div>
+          <div><dt>Open chat</dt><dd><span class="ph"><a href="https://open.kakao.com/o/gEQitNIi" target="_blank" rel="noopener">KakaoTalk open chat</a> — Korean-language chat</span></dd></div>
+        </dl>
+
+        <p class="warn">You can buy without contacting us at all. Enter your email at checkout and the key and files go to that address. For enquiries in English, use the email above.</p>
+      </div>
+    </div>
+
+    <p class="disclose">
+      How delivery works, stated plainly. Files are issued as a download tied to the subscriber's account, and the licence key is valid only while the subscription is. Cancel and the key is revoked, the pro features stop, and under the licence agreement you delete the copies you hold. The free agentlock is open source and keeps working.
+      You can cancel from the customer portal yourself, without contacting us.
+      What happens to the remainder of a paid period, and how refunds are handled, is set out just below under <a href="#withdraw">Cancellation and refunds</a>.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== WITHDRAWAL ===================== -->
+<section id="withdraw">
+  <div class="wrap">
+    <p class="eyebrow">Cancellation and refunds</p>
+    <h2 class="sec">Cancel it yourself. 14-day refund, no questions asked</h2>
+    <p class="lede">Because this is a subscription, two separate things exist. One is <b>cancelling</b> — not being billed again. The other is a <b>refund</b> — getting back what you already paid. Written the way the process actually runs, not copied out of a statute.</p>
+
+    <ul class="cause">
+      <li>
+        <h3>Cancelling · any time, yourself</h3>
+        <p>Cancel with <b>one button</b> in the customer portal. No need to contact us, and no reason to give. <b>Cancelling leaves you everything you have already paid for, until that period ends.</b> After that the licence key is revoked and you are not billed again.</p>
+      </li>
+      <li>
+        <h3>Refund · 14 days, no questions</h3>
+        <p>Tell us <b>within 14 days</b> of payment and we refund the full amount without asking why. No form to fill in, no explanation needed. Email or the open chat, whichever suits you. <b>It takes effect the moment you send it.</b></p>
+      </li>
+      <li>
+        <h3>Money back · within 3 business days</h3>
+        <p>It is a digital file, so there is nothing to send back. We only revoke the licence key. The full amount you paid is returned <b>within 3 business days of us receiving your request.</b> A card reversal can take a few days longer on the issuer's side.</p>
+      </li>
+    </ul>
+
+    <div class="thesis">
+      <div>
+        <h3>It renews automatically, and we warn you before it does</h3>
+        <div class="split">
+          <span class="chip">Monthly · same date each month</span>
+          <span class="chip">Annual · 7 days' notice</span>
+          <span class="chip">Cancel any time</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          The subscription renews automatically until you cancel, charging the same amount to the payment method on file. Monthly renews on the same date each month, annual on the same date each year.
+          For annual subscriptions <b>we email you 7 days before renewal.</b> Cancel then and the following year is not charged.
+          We also let you know in advance when a card is close to expiring, so nothing gets cut off by a failed payment.
+        </p>
+      </div>
+    </div>
+
+    <div class="thesis">
+      <div>
+        <h3>For customers in South Korea, the following statutory rights also apply</h3>
+        <div class="split">
+          <span class="chip">Withdrawal within 7 days</span>
+          <span class="chip">3 months / 30 days if it differs from what was advertised</span>
+          <span class="chip">Act on Consumer Protection in Electronic Commerce</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          If you are buying from South Korea, the Act on Consumer Protection in Electronic Commerce gives you a statutory right of withdrawal.
+          <b>Within 7 days of the date of payment you may withdraw and be refunded in full.</b>
+          No prescribed form and no explanation are required — telling us by email or open chat that you wish to withdraw is enough, and <b>it takes effect at the moment you send it.</b>
+        </p>
+        <p>
+          If what you received differs from the description and advertising on this page, or the contract was not performed as agreed, the period is longer.
+          You may withdraw <b>within 3 months of the date of supply, and within 30 days of the day you became aware of it or could reasonably have become aware of it.</b>
+          The way you notify us and the refund within 3 business days are the same as above.
+        </p>
+        <p>
+          The 14-day no-questions refund above is offered voluntarily and is longer than the statutory 7 days. It sits on top of these rights and neither replaces nor reduces them.
+        </p>
+      </div>
+    </div>
+
+    <p class="rules-foot">
+      <b>Where to send a refund or withdrawal request</b> — <span class="ph">zenesisgp500@gmail.com</span>, or the <a href="https://open.kakao.com/o/gEQitNIi" target="_blank" rel="noopener">KakaoTalk open chat</a> (a Korean-language chat). Either reaches us; for English, use the email.
+    </p>
+
+    <div class="plans-foot">
+      <p>Whichever route you use — the 14-day policy or the statutory right — the process is the same. Send us a note, we revoke the key, and the money goes back within 3 business days.</p>
+      <p>Payment, receipts and refund processing all run through the reseller, Polar Software, Inc. Send your request to the address above and we handle it from there.</p>
+      <p>The seller's name, address and contact details are at the very bottom of this page, along with how personal data is handled.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="#top"><span class="dot"></span>Multi-agent operating discipline</a>
+        <p style="margin-top:10px;font-size:13px;color:var(--ink-2);max-width:34ch">
+          Thin code, thick discipline. The way of working that has kept a live service running for <span class="js-days">55</span> days, written down.
+        </p>
+      </div>
+      <div class="biz">
+        <div><b>Seller</b><span>송우일</span></div>
+        <div><b>Address</b><span>3F, 30 Palgong-ro 47-gil, Dong-gu, Daegu, Republic of Korea</span></div>
+        <div><b>Phone</b><span class="ph">+82 53-986-4516</span></div>
+        <div><b>Enquiries</b><span>zenesisgp500@gmail.com</span></div>
+        <div><b>Open chat</b><span><a href="https://open.kakao.com/o/gEQitNIi" target="_blank" rel="noopener">KakaoTalk open chat</a> — Korean-language chat</span></div>
+        <div><b>Payments</b><span>Polar Software, Inc. (merchant of record)</span></div>
+        <div><b>Data protection officer</b><span>송우일 · zenesisgp500@gmail.com</span></div>
+        <div><b>Refunds</b><span><a href="#withdraw">Cancellation and refunds</a></span></div>
+      </div>
+    </div>
+
+    <div class="faq" style="margin-top:28px">
+      <details>
+        <summary>Privacy policy</summary>
+        <div class="a">
+          <p><b>What is collected</b> — your email address, the information needed to take payment (card details are not stored by us), and, if you buy as a business, your company name and tax registration number.</p>
+          <p><b>Why it is collected</b> — to process payment, issue the licence key and deliver the files, give notice of renewals, and answer enquiries.</p>
+          <p><b>Retention</b> — kept while the subscription is active. Cancel and ask for deletion and it is destroyed without delay. Records of the contract and of any withdrawal are kept for 5 years, as required by the Korean Act on Consumer Protection in Electronic Commerce.</p>
+          <p><b>Processing on our behalf</b> — entrusted to Polar Software, Inc. The entrusted work is payment processing, receipt issuance, licence key generation and file delivery. Card details are handled by that company and its payment processors and are never passed to us.</p>
+          <p><b>Transfer abroad</b> — under that arrangement, personal data is transferred to the United States. The recipient is Polar Software, Inc.; the items transferred, the purpose and the retention period are as above. Payment cannot be completed without agreement to this.</p>
+          <p><b>Disclosure to third parties</b> — none.</p>
+          <p><b>Your rights</b> — you may at any time request access, correction, deletion or suspension of processing. Write to the contact below and we will act on it.</p>
+          <p><b>Data protection officer</b> — 송우일 · zenesisgp500@gmail.com</p>
+        </div>
+      </details>
+    </div>
+    <div class="copy">
+      <span>&copy; 2026 송우일</span>
+      <span>The figures shown are measured values from a commercial service in production.</span>
+      <span>The client and the service are not disclosed.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---- days in operation: recomputed from the start date to today ---- */
+  var startAttr = (document.documentElement.getAttribute('data-start') || '2026-06-20').split('-');
+  var startUTC = Date.UTC(+startAttr[0], (+startAttr[1]) - 1, +startAttr[2]);
+  var now = new Date();
+  var todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  var days = Math.floor((todayUTC - startUTC) / 86400000);
+  if (!isFinite(days) || days < 55) { days = 55; }
+
+  var labels = document.querySelectorAll('.js-days');
+  for (var i = 0; i < labels.length; i++) { labels[i].textContent = String(days); }
+
+  /* ---- uptime ticks: one per day ---- */
+  var strip = document.getElementById('uptime');
+  if (strip) {
+    var have = strip.getElementsByTagName('i').length;
+    while (have < days) { strip.appendChild(document.createElement('i')); have++; }
+    while (have > days) { strip.removeChild(strip.lastElementChild); have--; }
+    strip.setAttribute('aria-label',
+      'One bar for each of the ' + days + ' days from 20 June 2026 to today, showing it ran every day');
+  }
+
+  /* ---- light / dark toggle (nothing is stored) ---- */
+  var root = document.documentElement;
+  var btn = document.getElementById('theme');
+  var use = document.getElementById('theme-ico').firstElementChild;
+  var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+  function isDark() {
+    var t = root.getAttribute('data-theme');
+    if (t) { return t === 'dark'; }
+    return !!(mq && mq.matches);
+  }
+  function paint() {
+    var dark = isDark();
+    use.setAttribute('href', dark ? '#i-sun' : '#i-moon');
+    btn.setAttribute('aria-label', dark ? 'Switch to the light theme' : 'Switch to the dark theme');
+  }
+  if (btn) {
+    btn.addEventListener('click', function () {
+      root.setAttribute('data-theme', isDark() ? 'light' : 'dark');
+      paint();
+    });
+    if (mq && mq.addEventListener) { mq.addEventListener('change', paint); }
+    paint();
+  }
+
+  /* ---- cost calculator (nothing is stored and nothing is sent to a server) ---- */
+  var LICENSE = 29;             /* Solo subscription, $29 a month */
+  var CHEAP_FACTOR = 0.2;       /* cheap remote: output price $25 -> $5 = one fifth */
+  var SLIDER_MAX = 1000;
+
+  var elSpend    = document.getElementById('c-spend');
+  var elSpendNum = document.getElementById('c-spend-num');
+  var elGen      = document.getElementById('c-gen');
+  var elSpendOut = document.getElementById('c-spend-out');
+  var elGenOut   = document.getElementById('c-gen-out');
+  var oNew  = document.getElementById('o-new');
+  var oSave = document.getElementById('o-save');
+  var oYear = document.getElementById('o-year');
+  var oDays = document.getElementById('o-days');
+  var mPay  = document.getElementById('m-pay');
+  var mCut  = document.getElementById('m-cut');
+  var kPay  = document.getElementById('k-pay');
+  var kCut  = document.getElementById('k-cut');
+  var meter = document.getElementById('c-meter');
+  var live  = document.getElementById('c-live');
+  var liveTimer = null;
+
+  function commas(n) {
+    return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+  /* dollars · whole number when it lands clean, otherwise one decimal place */
+  function usd(v) {
+    var m = Math.round(v * 10) / 10;
+    var whole = Math.floor(Math.abs(m));
+    var frac = Math.round((Math.abs(m) - whole) * 10);
+    var head = commas(whole);
+    return (m < 0 ? '-' : '') + (frac ? head + '.' + frac : head);
+  }
+  function setVal(el, num, unit, pre) {
+    el.textContent = '';
+    if (pre) {
+      var pf = document.createElement('span');
+      pf.className = 'pre';
+      pf.textContent = pre;
+      el.appendChild(pf);
+    }
+    el.appendChild(document.createTextNode(num));
+    var u = document.createElement('span');
+    u.className = 'unit';
+    u.textContent = unit;
+    el.appendChild(u);
+  }
+  function segWidth(el, pct) {
+    if (pct <= 0) { el.style.display = 'none'; el.style.width = '0'; return; }
+    el.style.display = 'block';
+    el.style.width = (pct >= 100) ? '100%' : 'calc(' + pct + '% - 1px)';
+  }
+
+  function targetValue() {
+    var r = document.querySelectorAll('input[name="c-target"]');
+    for (var i = 0; i < r.length; i++) { if (r[i].checked) { return r[i].value; } }
+    return 'local';
+  }
+
+  function calc(spend, genPct, target) {
+    var gen = genPct / 100;
+    var genCost = spend * gen;                       /* the share that goes to generation */
+    var keep = spend - genCost;                      /* review, design and the rest, left on the frontier model */
+    var factor = (target === 'local') ? 0 : CHEAP_FACTOR;
+    var newTotal = keep + genCost * factor;
+    var saveMonth = spend - newTotal;
+    var perDay = saveMonth / 30;
+    return {
+      newTotal: newTotal,
+      saveMonth: saveMonth,
+      saveYear: saveMonth * 12,
+      days: perDay > 0 ? Math.max(1, Math.round(LICENSE / perDay)) : 0
+    };
+  }
+
+  function render() {
+    var spend = Math.max(0, Number(elSpendNum.value) || 0);
+    var genPct = Math.max(0, Math.min(100, Number(elGen.value) || 0));
+    var r = calc(spend, genPct, targetValue());
+
+    elSpendOut.textContent = '$' + commas(spend);
+    elGenOut.textContent = genPct + '%';
+
+    setVal(oNew,  '$' + usd(r.newTotal),  '');
+    setVal(oSave, '$' + usd(r.saveMonth), '');
+    setVal(oYear, '$' + usd(r.saveYear),  '');
+    if (r.days > 0) { setVal(oDays, commas(r.days), 'days', '~'); }
+    else { setVal(oDays, '—', '', ''); }
+
+    kPay.textContent = '$' + usd(r.newTotal);
+    kCut.textContent = '$' + usd(r.saveMonth);
+
+    var payPct = spend > 0 ? (r.newTotal / spend) * 100 : 100;
+    segWidth(mPay, payPct);
+    segWidth(mCut, 100 - payPct);
+
+    var summary = 'Of $' + commas(spend) + ' a month, $' + commas(r.newTotal) + ' still goes out and $'
+      + commas(r.saveMonth) + ' is cut. That is $' + commas(r.saveYear) + ' a year'
+      + (r.days > 0 ? ', and about ' + commas(r.days) + ' days to pay back the monthly subscription.' : '.');
+    meter.setAttribute('aria-label', summary);
+    if (live) {
+      if (liveTimer) { clearTimeout(liveTimer); }
+      liveTimer = setTimeout(function () { live.textContent = summary; }, 600);
+    }
+  }
+
+  if (elSpend && elSpendNum && elGen) {
+    elSpend.addEventListener('input', function () {
+      elSpendNum.value = elSpend.value;
+      render();
+    });
+    elSpendNum.addEventListener('input', function () {
+      var v = Math.max(0, Number(elSpendNum.value) || 0);
+      elSpend.value = String(Math.min(v, SLIDER_MAX));
+      render();
+    });
+    elGen.addEventListener('input', render);
+    var radios = document.querySelectorAll('input[name="c-target"]');
+    for (var t = 0; t < radios.length; t++) { radios[t].addEventListener('change', render); }
+    render();
+  }
+
+})();
+</script>
+</body>
+</html>
