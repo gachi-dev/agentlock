@@ -29,6 +29,53 @@ agentlock enforces exactly one rule:
 
 > **Declare the files you're about to touch, and don't touch files someone else declared.**
 
+## It isn't just me
+
+This is already on the record.
+
+**Anthropic's own documentation admits it.** The Claude Code Agent Teams page says:
+
+> Two teammates editing the same file leads to overwrites. Break the work so each teammate owns a different set of files.
+
+The problem is acknowledged; the remedy offered is manual discipline. This tool is that discipline moved into code.
+
+There are incident reports too.
+
+| Where | What happened |
+|---|---|
+| [claude-code #28813](https://github.com/anthropics/claude-code/issues/28813) | 315 corrupted files over a week of concurrent sessions |
+| [openai/codex #10681](https://github.com/openai/codex/issues/10681) | One agent reverting another agent's changes |
+| [github community #163388](https://github.com/orgs/community/discussions/163388) | Later edits always overwrite earlier ones; reproduced by three people including staff |
+
+## How this differs from git worktrees
+
+Worktrees are the usual answer to this problem. **If your agents work on separate branches, worktrees are the right tool and this does not replace them.**
+
+There is a place worktrees structurally cannot reach.
+
+```console
+$ git worktree add ../work-b feature-auth
+fatal: 'feature-auth' is already checked out at '/path/work-a'
+```
+
+**Git refuses to check out the same branch twice.** Branch metadata is shared across worktrees, and there is no way around it. So "several agents, one branch" is outside what worktrees can do.
+
+And a shared checkout is already common:
+
+- Claude Code Agent Teams and subagents
+- Several people on one repository, each running their own agent
+- Agents running in CI
+
+That is where this fits. You can run it alongside worktrees; they don't interfere.
+
+| | git worktree | agentlock |
+|---|---|---|
+| Working on separate branches | **use this** | not needed |
+| Several agents, one branch | git refuses | **use this** |
+| When you learn about the conflict | at merge time, after both did the work | before either starts |
+| Runtime, port and database isolation | no | no |
+| Semantic conflicts | not caught | not caught |
+
 ## Install
 
 ```bash
