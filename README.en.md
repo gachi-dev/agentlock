@@ -4,6 +4,9 @@ Stops multiple AI coding agents from editing the same file at once and silently 
 
 Zero dependencies, Python 3.8+, a single 657-line file. [한국어](README.md)
 
+The tool in this repository is **MIT and free**. It is fine on its own.
+If you also need discipline around deploys, approvals, and completion reports, there is a paid **agentlock pro** — [plans and pricing](https://gachi-dev.github.io/agentlock/) · [what's different](#what-this-tool-does-not-enforce)
+
 ---
 
 ## Sound familiar?
@@ -428,23 +431,29 @@ agentlock is one of nine operating disciplines — number 3, declaring work befo
 
 The other eight are not enforced here. Shipping the same deploy twice, a completion report nobody verified, picking up work after a conversation window dies — number 3 stops none of them.
 
-If you need that part too, there are two things, kept separate from this repo:
+If you need that part too, it is kept separate from this repo.
 
-**Team operating kit** — the full text of all nine disciplines, 3 agent identity prompt templates, 5 forms, an incident procedure for when work does collide, and an adoption checklist. This is the read-it-and-follow-it side.
+**agentlock pro** — all nine enforced in code. One `setup` run assigns roles, file ownership, and the deploy owner, and installs the git hooks. Committing a file owned by someone else is blocked, a completion report that leaves the "not verified" section empty is rejected, a deploy only runs when the designated person has human approval, and records are hash-chained, so editing one afterwards tells you exactly which line was tampered with. **A document kit ships with it** — the full text of all nine disciplines, 3 agent identity prompt templates, 5 forms, an incident procedure for when work does collide, and an adoption checklist. Nothing to buy separately.
 
-**agentlock pro** — all nine enforced in code. One `setup` run assigns roles, file ownership, and the deploy owner, and installs the git hooks. Committing a file owned by someone else is blocked, a completion report that leaves the "not verified" section empty is rejected, a deploy only runs when the designated person has human approval, and records are hash-chained, so editing one afterwards tells you exactly which line was tampered with.
+Pro is a **subscription**. There are three plans, all shipping the same files; only the permitted scope of use differs.
 
-Pro comes in three tiers. All three ship the same files; only the permitted scope of use differs.
+| | Solo | Team | Business |
+|---|---|---|---|
+| Monthly | $29 | $79 | $199 |
+| Yearly (20% off) | $278 | $758 | $1,910 |
+| People covered | 1 | 10 on one repository | unlimited |
+| Shared servers and CI | no | yes | yes |
+| Commit to an internal repository | no | yes | yes |
 
-- **Individual** — one buyer, on their own machines. Any work you take part in yourself counts: personal projects, freelance contracts, and the job you currently hold.
-- **Team** — one named company or organization, no headcount limit. Includes committing to an internal repository for the team to share, and installing on shared servers and CI.
-- **Source extension** — everything in the team tier, plus integrating the source into the organization's internal systems and distributing the result inside that organization.
+Integrating the source into another piece of software is in none of the plans. Ask separately if you need it.
 
-Pricing and license terms are on the sales page.
+Pro commands run against a license key. The server is contacted once a day, keeps working for 14 days when it can't be reached, and what gets sent is the key, an activation identifier, and the machine label you chose. No source code and no file listings leave your machine in any form.
 
-Both are here — https://gachi-dev.github.io/agentlock/
+> ⚠️ **Korean-language only.** The program's messages and all bundled documentation are currently in Korean. An English version is in preparation; no date is promised. Please do not subscribe if you need English.
 
-One thing said plainly first: the free tool is enough for a lot of setups. If you're running two or three agents on your own, number 3 alone stops most of the accidents, and you don't need more than that. The two above are worth a look once you have to put discipline around deploys and approvals as well.
+Plans and pricing are here — **https://gachi-dev.github.io/agentlock/**
+
+One thing said plainly first: the free tool is enough for a lot of setups. If you're running two or three agents on your own, number 3 alone stops most of the accidents, and you don't need more than that. Pro is worth a look once you have to put discipline around deploys and approvals as well.
 
 ## License
 
