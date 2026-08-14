@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="ko" data-start="2026-06-20">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>AI 개발 비용 줄이는 셋업 — 생성은 값싼 모델, 검수는 상위 모델</title>
+<meta name="description" content="AI 개발 비용은 대부분 코드 생성에서 나갑니다. 생성을 로컬·값싼 모델로 내리고 검수만 상위 모델에 남기면 월 30만원이 6만원이 됩니다. 값싼 쪽을 믿을 수 있게 만드는 운영 규율 9가지와 셋업 키트.">
+<meta property="og:title" content="AI 개발 비용을 내리는 셋업 키트">
+<meta property="og:description" content="생성은 값싼 쪽으로, 검수만 위에. 월 30만원이 6만원, 연 288만원 절감. 값싼 모델을 실전에 투입할 수 있게 만드는 규율 9가지.">
+<meta property="og:type" content="website">
+<style>
+/* ============================================================
+   Tokens — light is the base, dark is selected (not flipped)
+   ============================================================ */
+:root{
+  color-scheme: light;
+  --page:#f9f9f7;
+  --surface:#fcfcfb;
+  --surface-2:#f3f2ee;
+  --ink:#0b0b0b;
+  --ink-2:#52514e;
+  --muted:#706d6a;          /* darker step of the palette gray so small text clears 4.5:1 */
+  --rule:#e1e0d9;
+  --line:#c3c2b7;
+  --accent:#2a78d6;         /* mark / fill */
+  --accent-text:#184f95;    /* accent as text (7.9:1 on surface) */
+  --accent-soft:#e8f0fc;
+  --track:#9dc2ef;          /* meter track — lighter step of the same blue ramp (ΔE 24.4 vs accent) */
+  --btn:#256abf;            /* white text = 5.4:1 */
+  --btn-hover:#1c5cab;
+  --btn-ink:#ffffff;
+  --ring:rgba(11,11,11,.10);
+  --shadow:0 1px 2px rgba(11,11,11,.05);
+  --maxw:1120px;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --page:#0d0d0d;
+    --surface:#1a1a19;
+    --surface-2:#222220;
+    --ink:#ffffff;
+    --ink-2:#c3c2b7;
+    --muted:#93918a;
+    --rule:#2c2c2a;
+    --line:#383835;
+    --accent:#3987e5;
+    --accent-text:#86b6ef;  /* 8.3:1 on dark surface */
+    --accent-soft:#14243a;
+    --track:#2f5583;        /* meter track — dark-mode step, chosen not flipped (ΔE 19.3 vs accent) */
+    --btn:#86b6ef;
+    --btn-hover:#9ec5f4;
+    --btn-ink:#0b0b0b;      /* 9.4:1 */
+    --ring:rgba(255,255,255,.12);
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d;
+  --surface:#1a1a19;
+  --surface-2:#222220;
+  --ink:#ffffff;
+  --ink-2:#c3c2b7;
+  --muted:#93918a;
+  --rule:#2c2c2a;
+  --line:#383835;
+  --accent:#3987e5;
+  --accent-text:#86b6ef;
+  --accent-soft:#14243a;
+  --track:#2f5583;
+  --btn:#86b6ef;
+  --btn-hover:#9ec5f4;
+  --btn-ink:#0b0b0b;
+  --ring:rgba(255,255,255,.12);
+  --shadow:none;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--page);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",system-ui,"Segoe UI",sans-serif;
+  font-size:16px;
+  line-height:1.7;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *{transition:none !important;animation:none !important}
+}
+h1,h2,h3,h4{line-height:1.32;margin:0;letter-spacing:-.015em;font-weight:650}
+p{margin:0}
+ul,ol{margin:0;padding:0;list-style:none}
+a{color:var(--accent-text);text-decoration:none}
+a:hover{text-decoration:underline;text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+svg{display:block}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+@media (min-width:800px){.wrap{padding:0 32px}}
+.skip{position:absolute;left:-9999px;top:0;background:var(--surface);padding:10px 14px;border:1px solid var(--line);z-index:99}
+.skip:focus{left:8px;top:8px}
+
+/* section rhythm */
+section{padding:clamp(48px,7vw,88px) 0;border-top:1px solid var(--rule);scroll-margin-top:66px}
+section:first-of-type{border-top:0}
+.eyebrow{
+  font-size:12.5px;font-weight:650;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:9px;
+}
+.eyebrow::before{content:"";width:22px;height:2px;background:var(--accent);border-radius:1px;flex:none}
+h2.sec{font-size:clamp(23px,3.4vw,32px);max-width:22ch;margin-bottom:14px}
+.lede{color:var(--ink-2);font-size:clamp(15px,1.6vw,17px);max-width:62ch}
+.hr{height:1px;background:var(--rule);border:0;margin:0}
+
+/* ============================================================
+   Header
+   ============================================================ */
+header.top{
+  position:sticky;top:0;z-index:40;
+  background:color-mix(in srgb, var(--page) 88%, transparent);
+  backdrop-filter:saturate(120%) blur(8px);
+  border-bottom:1px solid var(--rule);
+}
+@supports not (backdrop-filter: blur(2px)){header.top{background:var(--page)}}
+.topbar{display:flex;align-items:center;gap:14px;height:58px}
+.brand{display:flex;align-items:baseline;gap:9px;font-weight:650;font-size:15px;color:var(--ink);letter-spacing:-.02em;white-space:nowrap}
+.brand:hover{text-decoration:none}
+.brand .dot{width:9px;height:9px;border-radius:2px;background:var(--accent);flex:none;transform:translateY(-1px)}
+.brand small{font-weight:500;font-size:12px;color:var(--muted);letter-spacing:0}
+@media (max-width:640px){.topbar .brand{font-size:14px}.topbar .brand small{display:none}}
+nav.main{margin-left:auto;display:none;gap:22px}
+@media (min-width:940px){nav.main{display:flex}}
+nav.main a{color:var(--ink-2);font-size:14px;font-weight:550}
+nav.main a:hover{color:var(--ink);text-decoration:none}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+@media (min-width:940px){.top-actions{margin-left:22px}}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font:inherit;font-weight:600;font-size:15px;line-height:1;
+  padding:13px 20px;border-radius:7px;border:1px solid transparent;
+  cursor:pointer;text-align:center;transition:background-color .12s ease,border-color .12s ease,color .12s ease;
+}
+.btn:hover{text-decoration:none}
+.btn-primary{background:var(--btn);color:var(--btn-ink)}
+.btn-primary:hover{background:var(--btn-hover)}
+.btn-ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.btn-ghost:hover{background:var(--surface-2);border-color:var(--ink-2)}
+.btn-sm{padding:9px 14px;font-size:13.5px;border-radius:6px}
+.btn-block{width:100%}
+.icobtn{
+  width:36px;height:36px;padding:0;border-radius:7px;border:1px solid var(--rule);
+  background:var(--surface);color:var(--ink-2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.icobtn:hover{border-color:var(--line);color:var(--ink)}
+.ico{width:16px;height:16px;flex:none}
+.ico-sm{width:14px;height:14px}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero{padding:clamp(44px,6.5vw,80px) 0 clamp(40px,5vw,64px)}
+.hero-grid{display:grid;gap:clamp(28px,4vw,52px)}
+@media (min-width:960px){.hero-grid{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);align-items:start}}
+.tag{
+  display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;
+  color:var(--accent-text);background:var(--accent-soft);border:1px solid var(--ring);
+  padding:6px 11px;border-radius:999px;margin-bottom:20px;letter-spacing:-.01em;
+}
+.tag .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+h1{font-size:clamp(29px,5.2vw,50px);letter-spacing:-.03em;line-height:1.22;max-width:17ch;font-weight:700}
+h1 .u{
+  background:linear-gradient(transparent 62%, var(--accent-soft) 62%);
+  box-shadow:inset 0 -2px 0 var(--accent);
+}
+.hero p.sub{margin-top:20px;font-size:clamp(15.5px,1.8vw,18px);color:var(--ink-2);max-width:52ch}
+.cta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.cta-note{margin-top:12px;font-size:13px;color:var(--muted)}
+
+/* hero proof card */
+.proof{
+  background:var(--surface);border:1px solid var(--rule);border-radius:12px;
+  padding:clamp(18px,2.4vw,24px);box-shadow:var(--shadow);
+}
+.proof h3{font-size:13px;font-weight:650;color:var(--muted);letter-spacing:.02em;margin-bottom:2px}
+.proof .src{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+.proof dl{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;margin:0}
+.proof dt{font-size:12.5px;color:var(--ink-2);margin-bottom:2px}
+.proof dd{margin:0;font-size:clamp(21px,3vw,26px);font-weight:650;letter-spacing:-.02em;line-height:1.15}
+.proof dd .unit{font-size:.62em;font-weight:600;color:var(--ink-2);margin-left:2px}
+.proof .foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--muted)}
+
+/* ============================================================
+   Pain list
+   ============================================================ */
+.pain{display:grid;gap:12px;margin-top:32px}
+@media (min-width:720px){.pain{grid-template-columns:1fr 1fr;gap:12px 20px}}
+.pain li{
+  display:flex;gap:12px;align-items:flex-start;
+  background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:15px 16px;
+}
+.pain li .ico{color:var(--muted);margin-top:4px}
+.pain li span{font-size:14.5px;color:var(--ink)}
+.pain-foot{margin-top:26px;font-size:15px;color:var(--ink-2);border-left:2px solid var(--accent);padding-left:16px;max-width:58ch}
+
+/* ============================================================
+   Cause
+   ============================================================ */
+.cause{display:grid;gap:22px;margin-top:34px}
+@media (min-width:780px){.cause{grid-template-columns:repeat(3,1fr);gap:28px}}
+.cause li{border-top:2px solid var(--accent);padding-top:14px}
+.cause h3{font-size:16.5px;margin-bottom:7px}
+.cause p{font-size:14.5px;color:var(--ink-2)}
+
+/* positioning strip */
+.thesis{
+  margin-top:38px;background:var(--surface);border:1px solid var(--rule);border-radius:12px;
+  padding:clamp(20px,3vw,30px);display:grid;gap:18px;
+}
+@media (min-width:820px){.thesis{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:center;gap:32px}}
+.thesis h3{font-size:clamp(19px,2.6vw,25px);letter-spacing:-.02em}
+.thesis p{font-size:15px;color:var(--ink-2)}
+.thesis .split{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.chip{font-size:12.5px;font-weight:600;color:var(--ink-2);border:1px solid var(--rule);background:var(--surface-2);padding:5px 10px;border-radius:6px}
+
+/* ============================================================
+   Stat tiles (dataviz: KPI row — label / value / note)
+   ============================================================ */
+.tiles{display:grid;gap:12px;margin-top:32px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+@media (min-width:760px){.tiles{grid-template-columns:repeat(auto-fit,minmax(238px,1fr))}}
+.tile{
+  background:var(--surface);border:1px solid var(--rule);border-radius:10px;
+  padding:16px 16px 15px;position:relative;
+}
+.tile::before{content:"";position:absolute;left:16px;top:0;width:26px;height:2px;background:var(--accent);border-radius:0 0 2px 2px}
+.tile .lab{font-size:12.5px;color:var(--ink-2);margin-bottom:6px}
+.tile .val{font-size:clamp(26px,3.6vw,32px);font-weight:650;letter-spacing:-.025em;line-height:1.1;color:var(--ink)}
+.tile .val .unit{font-size:.55em;font-weight:600;color:var(--ink-2);margin-left:3px;letter-spacing:0}
+.tile .note{margin-top:7px;font-size:12.5px;color:var(--muted)}
+
+/* uptime strip — one tick = one day */
+.uptime-card{margin-top:22px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:clamp(16px,2.4vw,22px)}
+.uptime-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin-bottom:16px}
+.uptime-head h3{font-size:15.5px}
+.uptime-head .meta{font-size:12.5px;color:var(--muted)}
+.uptime{display:flex;align-items:flex-end;gap:2px;height:46px;border-bottom:1px solid var(--line);padding-bottom:0}
+.uptime i{flex:1 1 0;min-width:3px;height:100%;background:var(--accent);border-radius:3px 3px 0 0;display:block}
+.uptime-axis{display:flex;justify-content:space-between;margin-top:9px;font-size:12px;color:var(--muted)}
+.uptime-cap{margin-top:14px;font-size:13px;color:var(--ink-2)}
+.disclose{margin-top:20px;font-size:13px;color:var(--muted);max-width:80ch}
+
+/* ============================================================
+   Output-token price bars (dataviz: one measure, one series →
+   one color, no legend; 4px rounded data-end, square at baseline)
+   ============================================================ */
+.tokbars{margin-top:32px;background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:clamp(18px,2.6vw,24px)}
+.tokbars h3{font-size:15.5px;margin-bottom:3px}
+.tokbars .cap{font-size:12.5px;color:var(--muted);margin-bottom:20px}
+.tokbars ol{display:grid;gap:15px}
+.tokbars li{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+@media (min-width:560px){.tokbars li{grid-template-columns:132px minmax(0,1fr) 74px;gap:12px;align-items:center}}
+.tokbars .who{font-size:13.5px;color:var(--ink-2)}
+.tokbars .track{border-left:1px solid var(--line);padding:2px 0;min-height:18px;display:flex;align-items:center}
+.tokbars .fill{display:block;height:14px;background:var(--accent);border-radius:0 4px 4px 0}
+.tokbars .fill[data-zero]{width:0;height:14px;border-left:2px solid var(--line);border-radius:0}
+.tokbars .amt{font-size:14px;font-weight:650;color:var(--ink);font-variant-numeric:tabular-nums}
+@media (min-width:560px){.tokbars .amt{text-align:right}}
+.tokbars .foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--muted)}
+
+/* ============================================================
+   Cost calculator
+   ============================================================ */
+.calcbox{display:grid;gap:16px;margin-top:32px}
+@media (min-width:920px){.calcbox{grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:22px;align-items:start}}
+.calcpane{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:clamp(18px,2.6vw,24px)}
+.calcpane > h3{font-size:13px;font-weight:650;color:var(--muted);letter-spacing:.02em;margin-bottom:18px}
+.fld + .fld{margin-top:22px}
+.fld .flab{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:9px}
+.fld .flab span{font-size:13.5px;color:var(--ink-2)}
+.fld .flab b{font-size:15.5px;font-weight:650;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+input[type=range]{width:100%;display:block;margin:0;height:26px;accent-color:var(--accent);background:transparent;cursor:pointer}
+.numrow{display:flex;align-items:center;gap:9px;margin-top:11px;flex-wrap:wrap}
+.numrow input[type=number]{
+  font:inherit;font-size:14px;font-weight:600;color:var(--ink);background:var(--page);
+  border:1px solid var(--line);border-radius:7px;padding:9px 11px;width:150px;max-width:100%;
+  font-variant-numeric:tabular-nums;
+}
+.numrow small{font-size:12.5px;color:var(--muted)}
+.seg{display:grid;gap:9px}
+@media (min-width:440px){.seg{grid-template-columns:1fr 1fr}}
+.seg label{
+  display:flex;gap:10px;align-items:flex-start;background:var(--page);
+  border:1px solid var(--line);border-radius:9px;padding:11px 12px;cursor:pointer;
+}
+.seg label:hover{border-color:var(--ink-2)}
+.seg input{margin:4px 0 0;accent-color:var(--accent);flex:none}
+.seg b{display:block;font-size:13.5px;font-weight:650;color:var(--ink)}
+.seg small{display:block;font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
+.seg label:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.seg label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+
+.outs{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin:0}
+.outs > div{background:var(--surface);padding:15px 16px 16px}
+.outs dt{font-size:12.5px;color:var(--ink-2);margin-bottom:5px}
+.outs dd{margin:0;font-size:clamp(23px,3.4vw,29px);font-weight:650;letter-spacing:-.025em;line-height:1.12;color:var(--ink)}
+.outs dd .unit{font-size:.5em;font-weight:600;color:var(--ink-2);margin-left:3px;letter-spacing:0}
+.outs dd .pre{font-size:.5em;font-weight:600;color:var(--ink-2);margin-right:4px;letter-spacing:0}
+
+/* meter — fill = 남는 비용, track step = 절감액 (same blue ramp) */
+.meter{display:flex;gap:2px;height:28px;margin-top:22px}
+.meter i{display:block;height:100%;border-radius:3px;min-width:0}
+.meter .m-pay{background:var(--accent)}
+.meter .m-cut{background:var(--track)}
+.meter-key{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:11px}
+.meter-key span{display:inline-flex;align-items:baseline;gap:8px;font-size:13px;color:var(--ink-2)}
+.meter-key i{width:10px;height:10px;border-radius:2px;flex:none;transform:translateY(1px)}
+.meter-key b{color:var(--ink);font-weight:650;font-variant-numeric:tabular-nums}
+.assume{margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)}
+.assume h4{font-size:12.5px;font-weight:650;color:var(--ink-2);margin-bottom:9px}
+.assume li{font-size:12.5px;color:var(--muted);padding-left:13px;position:relative;line-height:1.62}
+.assume li + li{margin-top:5px}
+.assume li::before{content:"";position:absolute;left:0;top:.72em;width:4px;height:1px;background:var(--line)}
+
+/* ============================================================
+   Command list (역할 분리 세팅)
+   ============================================================ */
+.cmds{display:grid;gap:2px;margin-top:32px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+@media (min-width:720px){.cmds{grid-template-columns:1fr 1fr}}
+@media (min-width:1040px){.cmds{grid-template-columns:repeat(3,1fr)}}
+.cmds li{background:var(--surface);padding:18px 18px 20px}
+.cmds .cmd{
+  display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:13px;font-weight:650;color:var(--accent-text);background:var(--accent-soft);
+  border:1px solid var(--ring);padding:3px 9px;border-radius:6px;margin-bottom:11px;
+}
+.cmds h3{font-size:15px;margin-bottom:6px;letter-spacing:-.02em}
+.cmds p{font-size:13.5px;color:var(--ink-2)}
+.split2{display:grid;gap:2px;margin-top:24px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+@media (min-width:640px){.split2{grid-template-columns:1fr 1fr}}
+.split2 > div{background:var(--surface);padding:18px}
+.split2 h4{font-size:14.5px;margin-bottom:3px}
+.split2 .sub{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+.split2 ul{display:flex;flex-wrap:wrap;gap:6px}
+
+/* ============================================================
+   Disciplines
+   ============================================================ */
+.rules{display:grid;gap:2px;margin-top:32px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+@media (min-width:700px){.rules{grid-template-columns:1fr 1fr}}
+@media (min-width:1040px){.rules{grid-template-columns:repeat(3,1fr)}}
+.rules li{background:var(--surface);padding:18px 18px 20px}
+.rules .n{
+  font-size:12px;font-weight:700;color:var(--accent-text);letter-spacing:.04em;
+  display:inline-block;margin-bottom:8px;font-variant-numeric:tabular-nums;
+}
+.rules h3{font-size:15.5px;margin-bottom:6px;letter-spacing:-.02em}
+.rules p{font-size:13.5px;color:var(--ink-2)}
+.rules-foot{margin-top:22px;font-size:14px;color:var(--ink-2);max-width:64ch}
+
+/* ============================================================
+   Free tool
+   ============================================================ */
+.free{
+  margin-top:30px;background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:clamp(20px,3vw,28px);display:grid;gap:18px;
+}
+@media (min-width:840px){.free{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:32px}}
+.free .k{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.free code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:15px;font-weight:650;
+  color:var(--ink);background:var(--surface-2);border:1px solid var(--rule);padding:3px 9px;border-radius:6px;
+}
+.free .price{font-size:12.5px;font-weight:650;color:var(--accent-text);background:var(--accent-soft);border-radius:5px;padding:3px 9px}
+.free p{font-size:14.5px;color:var(--ink-2)}
+/* inline command name inside running text */
+.plan ul li code,.proof .src code,.faq .a code,.rules-foot code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.9em;font-weight:650;color:var(--accent-text);background:var(--accent-soft);
+  border-radius:5px;padding:1px 6px;white-space:nowrap;
+}
+
+/* ============================================================
+   Pricing
+   ============================================================ */
+.plans{display:grid;gap:14px;margin-top:26px;grid-template-columns:1fr}
+@media (min-width:700px){.plans{grid-template-columns:1fr 1fr}}
+@media (min-width:1040px){.plans{grid-template-columns:repeat(4,1fr)}}
+.plan{
+  background:var(--surface);border:1px solid var(--rule);border-radius:12px;
+  padding:22px 20px;display:flex;flex-direction:column;position:relative;
+}
+.plan.featured{border-color:var(--accent);border-width:1.5px;padding-top:26px}
+.badge{
+  position:absolute;top:-10px;left:20px;background:var(--btn);color:var(--btn-ink);
+  font-size:11.5px;font-weight:700;letter-spacing:.03em;padding:4px 10px;border-radius:5px;
+}
+.plan .name{font-size:15px;font-weight:650;letter-spacing:-.01em}
+.plan .meta{font-size:12.5px;color:var(--muted);margin-top:2px}
+.plan .price{
+  font-size:clamp(25px,3.2vw,29px);font-weight:700;letter-spacing:-.03em;margin:14px 0 4px;line-height:1.1;
+}
+.plan .price small{font-size:13.5px;font-weight:550;color:var(--ink-2);letter-spacing:0;margin-left:4px}
+.plan .pay{
+  font-size:12.5px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);
+  border:1px solid var(--ring);border-radius:7px;padding:8px 10px;margin:10px 0 14px;line-height:1.5;
+}
+.plan .desc{font-size:13.5px;color:var(--ink-2);margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--rule)}
+.plan ul{display:grid;gap:9px;margin-bottom:22px}
+.plan ul li{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;color:var(--ink)}
+.plan ul li .ico-sm{color:var(--accent);margin-top:5px}
+.plan .go{margin-top:auto}
+.plans-foot{margin-top:18px;display:grid;gap:6px;font-size:13px;color:var(--muted)}
+
+/* ============================================================
+   FAQ
+   ============================================================ */
+.faq{margin-top:30px;border-top:1px solid var(--rule)}
+.faq details{border-bottom:1px solid var(--rule)}
+.faq summary{
+  cursor:pointer;list-style:none;padding:18px 40px 18px 0;position:relative;
+  font-size:15.5px;font-weight:600;color:var(--ink);
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{
+  content:"";position:absolute;right:8px;top:50%;width:9px;height:9px;
+  border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);
+  transform:translateY(-70%) rotate(45deg);transition:transform .15s ease;
+}
+.faq details[open] summary::after{transform:translateY(-30%) rotate(225deg)}
+.faq summary:hover{color:var(--accent-text)}
+.faq .a{padding:0 0 20px;font-size:14.5px;color:var(--ink-2);max-width:70ch}
+.faq .a p + p{margin-top:10px}
+
+/* ============================================================
+   Buy / contact
+   ============================================================ */
+.buy{display:grid;gap:16px;margin-top:30px}
+@media (min-width:880px){.buy{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:24px}}
+.steps{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:clamp(20px,3vw,26px)}
+.steps ol{display:grid;gap:18px;counter-reset:s}
+.steps ol li{display:grid;grid-template-columns:26px 1fr;gap:13px;align-items:start}
+.steps ol li::before{
+  counter-increment:s;content:counter(s);
+  width:26px;height:26px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);
+  font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;
+}
+.steps h3{font-size:15px;margin-bottom:3px}
+.steps p{font-size:13.5px;color:var(--ink-2)}
+.steps .note{margin-top:20px;padding-top:16px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--muted)}
+.acct{background:var(--surface-2);border:1px solid var(--rule);border-radius:12px;padding:clamp(20px,3vw,26px)}
+.acct h3{font-size:14px;color:var(--ink-2);margin-bottom:14px}
+.acct dl{display:grid;gap:12px;margin:0}
+.acct dt{font-size:12.5px;color:var(--muted)}
+.acct dd{margin:0;font-size:15px;font-weight:600;color:var(--ink)}
+.ph{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;font-weight:600;
+  color:var(--accent-text);background:var(--accent-soft);border:1px dashed var(--ring);
+  padding:2px 7px;border-radius:5px;white-space:nowrap;
+}
+/* 결제·연락처 정보: 자리표시자로 보이지 않게 실선 + 배경 강조 */
+#buy .ph,#faq .ph,#withdraw .ph{border-style:solid;border-color:var(--line);max-width:100%;white-space:normal}
+.acct .warn{margin-top:16px;padding-top:14px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-2)}
+
+/* 계좌번호 복사 버튼 */
+.copy-acct{
+  display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px 9px;
+  cursor:pointer;line-height:1.5;text-align:left;
+}
+.copy-acct:hover{border-color:var(--accent);background:var(--surface)}
+.copy-acct .cp{
+  font-family:inherit;font-size:11.5px;font-weight:650;color:var(--muted);
+  letter-spacing:.01em;flex:none;
+}
+.copy-acct:hover .cp{color:var(--accent-text)}
+
+/* 입금자명 상품 코드표 */
+.codes{margin-top:16px;padding-top:14px;border-top:1px solid var(--rule)}
+.codes h4{font-size:13px;color:var(--ink-2);margin-bottom:10px}
+.codes ul{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.codes .chip b{color:var(--accent-text);font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.codes p{font-size:12.5px;color:var(--muted)}
+.codes p + p{margin-top:6px}
+.codes p b{color:var(--ink-2);font-weight:650}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+footer{background:var(--surface);border-top:1px solid var(--rule);padding:38px 0 44px}
+.foot-grid{display:grid;gap:22px}
+@media (min-width:800px){.foot-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:40px}}
+footer .biz{display:grid;gap:7px;font-size:12.5px;color:var(--muted)}
+footer .biz div{display:flex;flex-wrap:wrap;gap:4px 10px}
+footer .biz b{font-weight:600;color:var(--ink-2)}
+footer .copy{margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 16 16"><path d="M8 3v6M8 12.2v.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".45"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M3 8h9M8.5 4.2L12.3 8l-3.8 3.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-github" viewBox="0 0 16 16"><path fill="currentColor" d="M8 .2a8 8 0 00-2.5 15.6c.4.1.5-.2.5-.4v-1.4c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.2 1.9.9 2.4.7.1-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-3.9 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.6 7.6 0 014 0c1.5-1 2.2-.8 2.2-.8.5 1.1.2 1.9.1 2.1.5.5.8 1.2.8 2.1 0 3-1.8 3.7-3.6 3.9.3.3.6.8.6 1.6v2.3c0 .2.1.5.5.4A8 8 0 008 .2z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.1" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2L3.1 3.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 16 16"><path d="M13.5 9.6A5.8 5.8 0 016.4 2.5a5.9 5.9 0 107.1 7.1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap topbar">
+    <a class="brand" href="#top"><span class="dot"></span>에이전트 협업 운영 체계 <small>실운영 <span class="js-days">55</span>일차</small></a>
+    <nav class="main" aria-label="주요 섹션">
+      <a href="#cost">비용 구조</a>
+      <a href="#calc">계산기</a>
+      <a href="#rules">규율 9가지</a>
+      <a href="#setup">역할 분리</a>
+      <a href="#pricing">가격</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="top-actions">
+      <button class="icobtn" id="theme" type="button" aria-label="밝은 화면과 어두운 화면 전환">
+        <svg class="ico" id="theme-ico" aria-hidden="true"><use href="#i-moon"></use></svg>
+      </button>
+      <a class="btn btn-primary btn-sm" href="#pricing">상품 보기</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+<a id="top"></a>
+
+<!-- ===================== HERO ===================== -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="tag"><span class="pulse"></span>에이전트 8종 · <span class="js-days">55</span>일째 무중단 가동 중</span>
+      <h1>생성은 값싼 쪽으로, 검수만 위로. <span class="u">월 30만원이 6만원</span>이 됩니다.</h1>
+      <p class="sub">
+        AI 개발 비용은 대부분 코드를 <b>쓰는</b> 쪽에서 나갑니다. 출력 토큰이 많기 때문입니다.
+        읽고 판단만 하는 검수는 출력이 짧아 훨씬 쌉니다.
+        그래서 생성을 로컬 모델이나 값싼 모델로 내리고 검수·설계만 상위 모델이 맡으면 청구서가 내려갑니다.
+        걸리는 건 하나입니다. 값싼 쪽을 혼자 두면 결과를 믿을 수가 없습니다. 이 도구는 거기를 붙잡습니다.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#calc">
+          내 비용으로 계산해보기
+          <svg class="ico" aria-hidden="true"><use href="#i-arrow"></use></svg>
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/gachi-dev/agentlock" target="_blank" rel="noopener">
+          <svg class="ico" aria-hidden="true"><use href="#i-github"></use></svg>
+          무료 도구 받기 · agentlock
+        </a>
+      </div>
+      <p class="cta-note">위 금액은 월 API 30만원, 생성 비중 80%, 생성을 로컬로 내렸을 때의 계산값입니다. 가정은 계산기 아래에 그대로 적어 두었습니다.</p>
+    </div>
+
+    <aside class="proof" aria-label="비용 계산 예시">
+      <h3>계산 예시 · 월 30만원 쓰던 경우</h3>
+      <p class="src">생성 비중 80%를 로컬로 내렸을 때 · 도구에 내장된 <code>cost</code> 명령 실행 결과</p>
+      <dl>
+        <div><dt>바뀐 월 비용</dt><dd>6<span class="unit">만원</span></dd></div>
+        <div><dt>월 절감액</dt><dd>24<span class="unit">만원</span></dd></div>
+        <div><dt>연 절감액</dt><dd>288<span class="unit">만원</span></dd></div>
+        <div><dt>개인 라이선스 회수</dt><dd>12<span class="unit">일</span></dd></div>
+      </dl>
+      <p class="foot">조건이 있습니다. 로컬로 내리려면 장비가 받쳐줘야 하고(메모리 32GB 이상 권장), 생성 비중은 팀마다 다릅니다. 본인 수치를 넣어 확인해 보세요.</p>
+    </aside>
+  </div>
+</section>
+
+<!-- ===================== COST STRUCTURE ===================== -->
+<section id="cost">
+  <div class="wrap">
+    <p class="eyebrow">비용 구조</p>
+    <h2 class="sec">비싼 것은 판단이 아니라 분량입니다</h2>
+    <p class="lede">과금은 대부분 출력 토큰에서 발생합니다. 코드를 새로 쓰는 일은 출력이 길고, 읽고 지적하는 일은 출력이 짧습니다. 그래서 같은 작업이라도 누가 맡느냐에 따라 청구서가 달라집니다.</p>
+
+    <ul class="cause">
+      <li>
+        <h3>생성은 출력이 깁니다</h3>
+        <p>파일 하나를 새로 쓰면 수천 토큰이 나갑니다. 리팩터링도, 테스트 작성도 같습니다. 돈은 여기서 빠집니다.</p>
+      </li>
+      <li>
+        <h3>검수는 출력이 짧습니다</h3>
+        <p>읽고 "여기가 틀렸다"고 답하는 일은 출력이 몇 줄입니다. 입력이 길어도 출력 단가에 비하면 부담이 작습니다.</p>
+      </li>
+      <li>
+        <h3>그래서 나누면 내려갑니다</h3>
+        <p>분량이 나가는 일은 값싼 쪽으로, 판단만 상위 모델로. 로컬로 내리면 그쪽 토큰 비용은 0원이 됩니다.</p>
+      </li>
+    </ul>
+
+    <div class="tokbars">
+      <h3>출력 100만 토큰당 단가</h3>
+      <p class="cap">막대 길이가 단가입니다. 같은 분량을 생성했을 때 청구되는 금액의 차이입니다.</p>
+      <ol>
+        <li>
+          <span class="who">상위 모델</span>
+          <span class="track"><span class="fill" style="width:100%"></span></span>
+          <span class="amt">$25</span>
+        </li>
+        <li>
+          <span class="who">값싼 원격 모델</span>
+          <span class="track"><span class="fill" style="width:20%"></span></span>
+          <span class="amt">$5</span>
+        </li>
+        <li>
+          <span class="who">로컬 모델</span>
+          <span class="track"><span class="fill" data-zero="1"></span></span>
+          <span class="amt">$0</span>
+        </li>
+      </ol>
+      <p class="foot">
+        출력 100만 토큰 기준입니다. 상위 모델과 값싼 원격 모델의 차이는 5배입니다.
+        로컬은 토큰 비용이 0원이라는 뜻이고, 전기요금과 장비값은 이 숫자에 들어 있지 않습니다.
+        입력 토큰 단가는 별도이고 보통 더 쌉니다.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CALCULATOR ===================== -->
+<section id="calc">
+  <div class="wrap">
+    <p class="eyebrow">비용 계산기</p>
+    <h2 class="sec">본인 숫자를 넣어보세요</h2>
+    <p class="lede">값을 바꾸면 바로 갱신됩니다. 아무것도 저장하지 않고, 서버로 보내지도 않습니다. 이 페이지 안에서만 계산합니다.</p>
+
+    <div class="calcbox">
+      <div class="calcpane">
+        <h3>입력</h3>
+
+        <div class="fld">
+          <label class="flab" for="c-spend"><span>지금 쓰는 월 API 비용</span><b id="c-spend-out">300,000원</b></label>
+          <input type="range" id="c-spend" min="0" max="1500000" step="10000" value="300000">
+          <div class="numrow">
+            <input type="number" id="c-spend-num" min="0" max="50000000" step="10000" value="300000" aria-label="월 API 비용을 원 단위로 직접 입력">
+            <small>원 · 직접 입력하셔도 됩니다</small>
+          </div>
+        </div>
+
+        <div class="fld">
+          <label class="flab" for="c-gen"><span>그중 코드 생성이 차지하는 비중</span><b id="c-gen-out">80%</b></label>
+          <input type="range" id="c-gen" min="0" max="100" step="5" value="80">
+          <div class="numrow"><small>팀마다 다릅니다. 모르시면 기본값 80%로 두고 보셔도 됩니다.</small></div>
+        </div>
+
+        <div class="fld">
+          <p class="flab"><span>생성을 어디로 내릴지</span></p>
+          <div class="seg">
+            <label>
+              <input type="radio" name="c-target" value="local" checked>
+              <span><b>로컬 모델</b><small>토큰 비용 0원. 장비가 받쳐줘야 합니다</small></span>
+            </label>
+            <label>
+              <input type="radio" name="c-target" value="cheap">
+              <span><b>값싼 원격 모델</b><small>5분의 1 수준. 장비가 필요 없습니다</small></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="calcpane">
+        <h3>결과</h3>
+        <dl class="outs">
+          <div><dt>바뀐 월 비용</dt><dd id="o-new">6<span class="unit">만원</span></dd></div>
+          <div><dt>월 절감액</dt><dd id="o-save">24<span class="unit">만원</span></dd></div>
+          <div><dt>연 절감액</dt><dd id="o-year">288<span class="unit">만원</span></dd></div>
+          <div><dt>개인 라이선스 회수</dt><dd id="o-days"><span class="pre">약</span>12<span class="unit">일</span></dd></div>
+        </dl>
+
+        <div class="meter" id="c-meter" role="img" aria-label="월 30만원 중 6만원은 그대로 나가고 24만원이 줄어듭니다">
+          <i class="m-pay" id="m-pay" style="width:calc(20% - 1px)"></i>
+          <i class="m-cut" id="m-cut" style="width:calc(80% - 1px)"></i>
+        </div>
+        <div class="meter-key">
+          <span><i class="m-pay"></i>바뀐 월 비용 <b id="k-pay">6만원</b></span>
+          <span><i class="m-cut"></i>줄어드는 금액 <b id="k-cut">24만원</b></span>
+        </div>
+
+        <div class="assume">
+          <h4>계산 근거 · 가정</h4>
+          <ul>
+            <li>생성 비중만큼의 금액이 내리는 대상으로 옮겨가고, 나머지(검수·설계·판단)는 상위 모델에 그대로 남는다고 봅니다.</li>
+            <li>로컬은 토큰 비용 0원으로 계산합니다. 전기요금과 장비 구입비는 넣지 않았습니다.</li>
+            <li>값싼 원격은 출력 100만 토큰당 $25 대 $5, 5분의 1로 계산합니다.</li>
+            <li>회수 기간은 개인 라이선스 99,000원 ÷ (월 절감액 ÷ 30일)입니다. 하루 절감액이 일정하다고 가정한 값입니다.</li>
+            <li>기본값 80%에서는 5분의 1이 됩니다. 생성 비중이 90%인 팀이 전부 로컬로 내리면 10분의 1까지 내려갑니다. 반대로 비중이 낮으면 절감폭도 그만큼 작습니다.</li>
+            <li>생성 품질이 떨어지면 재작업이 생깁니다. 그 시간은 이 계산에 들어 있지 않습니다.</li>
+          </ul>
+        </div>
+        <p class="sr" role="status" aria-live="polite" id="c-live"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== REVENUE ===================== -->
+<section id="revenue">
+  <div class="wrap">
+    <p class="eyebrow">절감만이 아닙니다</p>
+    <h2 class="sec">전에는 수지가 안 맞아 넘기던 일을 받을 수 있게 됩니다</h2>
+    <p class="lede">비용이 내려가면 아끼는 데서 끝나지 않습니다. 견적을 낼 수 있는 구간이 넓어집니다.</p>
+
+    <div class="thesis">
+      <div>
+        <h3>100만원짜리 건에서 AI 비용을 빼고 남는 금액</h3>
+        <div class="split">
+          <span class="chip">AI 30만원 → 70만원</span>
+          <span class="chip">AI 6만원 → 94만원</span>
+          <span class="chip">차이 24만원 · 개발자 약 다섯 시간</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          100만원짜리 외주를 받는다고 해보겠습니다. AI 비용이 30만원이면 70만원이 남고, 여기서 들인 시간까지 빼면 받을 이유가 크지 않습니다.
+          같은 건에서 AI 비용이 6만원이면 94만원이 남습니다. 차이 24만원은 국내 응용SW 개발자 시간당 단가 47,281원(KOSA 2026 기준)으로 환산하면 약 다섯 시간 값입니다.
+          단가를 낮춰 더 받자는 이야기가 아닙니다. 전에는 계산이 안 서서 넘기던 건이 계산이 서게 된다는 이야기입니다.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PAIN ===================== -->
+<section id="pain">
+  <div class="wrap">
+    <p class="eyebrow">그런데 왜 다들 안 내리는가</p>
+    <h2 class="sec">값싼 쪽을 혼자 두면, 뭘 했는지 알 방법이 없기 때문입니다</h2>
+    <p class="lede">아래는 에이전트를 여럿 붙여 <span class="js-days">55</span>일을 굴리면서 실제로 겪은 일들입니다. 값이 싼 쪽에 맡길수록 더 자주 납니다.</p>
+
+    <ul class="pain">
+      <li><svg class="ico" aria-hidden="true"><use href="#i-alert"></use></svg><span>에이전트 A가 고쳐 놓은 파일을, 에이전트 B가 통째로 예전 버전으로 되돌려 놨습니다.</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-alert"></use></svg><span>두 에이전트가 같은 함수를 각자 다르게 고쳐 놓고, 둘 다 "완료했습니다"라고 보고했습니다.</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-alert"></use></svg><span>어제까지 되던 기능이 오늘 안 됩니다. 누가 언제 무엇을 건드렸는지 남아 있는 기록이 없습니다.</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-alert"></use></svg><span>새 창을 열 때마다 에이전트가 다른 사람처럼 굴어서, 매번 처음부터 다시 설명하고 있습니다.</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-alert"></use></svg><span>한 에이전트가 배포한 걸 다른 에이전트가 또 배포해서, 롤백 순서가 꼬였습니다.</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-alert"></use></svg><span>응답이 끊긴 에이전트의 작업을 이어받아야 하는데, 어디까지 했는지 알 방법이 없습니다.</span></li>
+    </ul>
+
+    <p class="pain-foot">
+      이 상황의 비용은 날아간 코드가 아닙니다. "지금 이 상태가 맞는 상태인가"를 사람이 매번 다시 확인해야 하는 시간입니다.
+      그래서 대부분 값싼 쪽에 맡기는 걸 포기하고 비싼 모델로 전부 처리합니다. 안 믿기느니 돈을 더 내는 쪽을 고르는 겁니다.
+      아래 규율 9가지는 정확히 그 지점을 겨냥합니다. 뭘 했고 뭘 안 했는지, 어디를 건드렸는지가 남으면 값싼 쪽에도 일을 맡길 수 있게 됩니다.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== WHY ===================== -->
+<section id="why">
+  <div class="wrap">
+    <p class="eyebrow">왜 생기는가</p>
+    <h2 class="sec">모델이 나빠서가 아니라, 셋이 없어서 생깁니다</h2>
+    <p class="lede">에이전트는 각자 자기 작업만 봅니다. 옆에서 누가 무엇을 하는지 볼 방법을 주지 않으면, 성실한 에이전트일수록 더 크게 덮어씁니다.</p>
+
+    <ul class="cause">
+      <li>
+        <h3>소유권이 없습니다</h3>
+        <p>모든 에이전트가 모든 파일을 쓸 수 있는 상태입니다. 경계가 없으니 충돌은 사고가 아니라 시간문제입니다.</p>
+      </li>
+      <li>
+        <h3>순서가 없습니다</h3>
+        <p>시작을 선언하지 않고 바로 손을 댑니다. 둘이 같은 지점에 동시에 들어간 뒤에야 문제가 드러납니다.</p>
+      </li>
+      <li>
+        <h3>기억이 없습니다</h3>
+        <p>대화 창이 끊기면 맥락이 사라집니다. 다음 에이전트는 남은 코드만 보고 나머지를 추측으로 채웁니다.</p>
+      </li>
+    </ul>
+
+    <div class="thesis">
+      <div>
+        <h3>얇은 코드, 두꺼운 규율</h3>
+        <div class="split">
+          <span class="chip">운영 코드 4,250줄</span>
+          <span class="chip">동기화 서버 90줄</span>
+          <span class="chip">월 운영비 0원</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          이 문제를 큰 프레임워크로 풀려고 하면, 프레임워크를 관리하는 일이 새로 생깁니다.
+          실제로 <span class="js-days">55</span>일을 버티게 한 건 코드가 아니라 규율이었습니다. 코드는 규율을 강제하는 최소한만 남겼습니다.
+          그래서 파는 것도 코드가 아니라, 실서비스 운영에서 살아남은 규율 9가지입니다.
+          이 규율이 서 있으면 손이 값싼 모델이어도 결과를 쓸 수 있게 되고, 그때부터 앞의 계산이 성립합니다.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PROOF ===================== -->
+<section id="proof">
+  <div class="wrap">
+    <p class="eyebrow">실적</p>
+    <h2 class="sec">주장 대신 기록으로 말씀드립니다</h2>
+    <p class="lede">아래 숫자는 국내에서 운영 중인 실서비스에서 실제로 쌓인 값입니다. 시연용으로 만든 환경이 아닙니다.</p>
+
+    <ul class="tiles">
+      <li class="tile">
+        <p class="lab">무중단 협업 운영</p>
+        <p class="val"><span class="js-days">55</span><span class="unit">일</span></p>
+        <p class="note">2026.6.20 ~ 현재 가동 중</p>
+      </li>
+      <li class="tile">
+        <p class="lab">동시 운영 에이전트</p>
+        <p class="val">8<span class="unit">종</span></p>
+        <p class="note">역할을 고정해 분리 운영</p>
+      </li>
+      <li class="tile">
+        <p class="lab">에이전트 간 메시지</p>
+        <p class="val">1,990<span class="unit">건</span></p>
+        <p class="note">하루 평균 약 36건</p>
+      </li>
+      <li class="tile">
+        <p class="lab">자동 회의 기록</p>
+        <p class="val">960<span class="unit">건</span></p>
+        <p class="note">무인 정기 회의 · 하루 평균 약 17건</p>
+      </li>
+      <li class="tile">
+        <p class="lab">작업 인수인계 문서</p>
+        <p class="val">32<span class="unit">건</span></p>
+        <p class="note">담당이 바뀔 때마다 작성</p>
+      </li>
+      <li class="tile">
+        <p class="lab">전체 운영 코드</p>
+        <p class="val">4,250<span class="unit">줄</span></p>
+        <p class="note">클라우드 동기화 서버 90줄 별도</p>
+      </li>
+      <li class="tile">
+        <p class="lab">월 운영비</p>
+        <p class="val">0<span class="unit">원</span></p>
+        <p class="note">별도 유료 인프라 없이 운영</p>
+      </li>
+    </ul>
+
+    <div class="uptime-card">
+      <div class="uptime-head">
+        <h3>운영 일자</h3>
+        <span class="meta">눈금 하나가 하루입니다. 시작일부터 오늘까지 빠진 날이 없습니다.</span>
+      </div>
+      <div class="uptime" id="uptime" role="img" aria-label="2026년 6월 20일부터 오늘까지 55일 동안 매일 가동되었음을 나타내는 막대 55개">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <div class="uptime-axis"><span>2026.6.20 시작</span><span>오늘 · 가동 중</span></div>
+      <p class="uptime-cap">중간에 멈춘 날이 있었다면 그 자리는 비어 있었을 겁니다. 아직 비어 있는 자리가 없습니다.</p>
+    </div>
+
+    <p class="disclose">
+      어느 회사인지, 무슨 서비스인지는 밝히지 않습니다. 운영 중인 서비스라 밝히는 순간 내부 구조를 같이 밝히게 되기 때문입니다.
+      숫자와 규율만 공개합니다. 이 조건이 불편하시면 구매하지 않으셔도 됩니다.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== RULES ===================== -->
+<section id="rules">
+  <div class="wrap">
+    <p class="eyebrow">규율 9가지</p>
+    <h2 class="sec">값싼 모델을 실전에 투입할 수 있게 만드는 장치 9가지</h2>
+    <p class="lede">
+      싼 쪽에 일을 맡길 때 필요한 건 더 똑똑한 모델이 아니라, 뭘 했는지 남기게 만드는 장치입니다.
+      미검증 항목을 비우면 완료 보고가 거부되고, 담당 영역 밖은 커밋이 막히고, 되돌리기 어려운 곳은 사람 승인 없이 못 넘어갑니다.
+      제목은 여기서 전부 공개합니다. 감출 이유가 없습니다. 어려운 건 제목을 아는 게 아니라 매일 지키게 만드는 절차입니다.
+    </p>
+
+    <ol class="rules">
+      <li><span class="n">규율 01</span><h3>역할 고정 분리</h3><p>에이전트마다 담당 영역과 등급을 고정합니다. 분량을 쓰는 손발과 판단을 하는 머리를 섞지 않습니다.</p></li>
+      <li><span class="n">규율 02</span><h3>파일 소유권 분리 + 인터페이스 계약</h3><p>서로 만지는 파일을 나누고, 정해진 접점으로만 연결합니다. 경계를 넘는 수정은 계약을 고치는 일이 됩니다.</p></li>
+      <li><span class="n">규율 03</span><h3>작업 시작 선언 의무</h3><p>코드를 건드리기 전에 무엇을 할지 먼저 남깁니다. 이 규율만 코드로 구현한 것이 무료 도구 agentlock입니다.</p></li>
+      <li><span class="n">규율 04</span><h3>단일 배포자 원칙</h3><p>배포는 한 명만 합니다. 교차 배포를 금지하면 롤백 순서가 꼬이지 않습니다.</p></li>
+      <li><span class="n">규율 05</span><h3>부재 시 승계 프로토콜</h3><p>상대가 응답하지 않을 때 무엇을 어떤 순서로 읽고 이어받는지 정해 둡니다. 판단이 아니라 절차로 처리합니다.</p></li>
+      <li><span class="n">규율 06</span><h3>정체성 고정 프롬프트</h3><p>등급에 맞는 자아를 고정합니다. 손발에게는 혼자 판단하지 말라고, 머리에게는 분량 작업을 직접 하지 말라고 박아 둡니다.</p></li>
+      <li><span class="n">규율 07</span><h3>완료 보고에 검증 증거 의무</h3><p>무엇을 검증했고 무엇을 못 했는지 함께 적습니다. 미검증 항목을 비워 두면 완료 보고 자체가 거부됩니다.</p></li>
+      <li><span class="n">규율 08</span><h3>승인 게이트</h3><p>배포, 금액, DB 구조 변경은 사람 승인을 거칩니다. 값싼 쪽이 위험 구역에 혼자 들어가지 못하게 막는 자리입니다.</p></li>
+      <li><span class="n">규율 09</span><h3>append-only 원장</h3><p>한 일은 해시로 엮인 기록에 쌓기만 합니다. 한 줄만 고치거나 지워도 몇 번째 줄이 훼손됐는지 잡힙니다.</p></li>
+    </ol>
+
+    <p class="rules-foot">
+      이 9가지가 서 있지 않으면 값싼 쪽에 일을 맡길 수 없습니다. 뭘 했는지, 뭘 안 했는지, 어디를 건드렸는지 모르는 결과물은 결국 사람이 처음부터 다시 봐야 하고, 그러면 아낀 돈보다 든 시간이 큽니다.
+      각 규율의 실제 문서, 에이전트별 정체성 프롬프트 템플릿, 인수인계 양식, 충돌 대응 절차는 <a href="#pricing">협업 운영 키트</a>에 들어 있습니다.
+      같은 9가지를 사람이 지키는 대신 도구가 강제하게 만든 것은 <a href="#pricing">agentlock pro</a>입니다.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== SETUP / ROLE SPLIT ===================== -->
+<section id="setup">
+  <div class="wrap">
+    <p class="eyebrow">역할 분리 세팅</p>
+    <h2 class="sec">손발과 머리를 나누는 부분이 명령으로 들어 있습니다</h2>
+    <p class="lede">아래는 최근에 들어간 기능입니다. 실제로 동작하는 것만 적었습니다. 직접 구조를 짜지 않으셔도 되게, 나누는 지점을 미리 만들어 두었습니다.</p>
+
+    <ul class="cmds">
+      <li>
+        <code class="cmd">setup --preset 4</code>
+        <h3>한 번에 나눠서 세팅</h3>
+        <p>손발(로컬)과 머리(상위 모델)로 역할을 갈라 한 번에 세팅합니다. 담당 영역, 배포 담당, 승인 지점, git 훅, 등급별 정체성 프롬프트까지 이 명령에서 만들어집니다.</p>
+      </li>
+      <li>
+        <code class="cmd">env</code>
+        <h3>로컬 런타임 점검</h3>
+        <p>Ollama, LM Studio, llama.cpp, vLLM이 떠 있는지 감지합니다. 장비 메모리를 보고 감당할 수 있는 모델 규모를 알려주고, 로컬 담당은 지정돼 있는데 런타임이 안 떠 있으면 경고합니다.</p>
+      </li>
+      <li>
+        <code class="cmd">cost</code>
+        <h3>절감액 계산</h3>
+        <p>지금 쓰는 금액과 생성 비중을 넣으면 바뀐 월 비용, 월 절감액, 연 절감액을 계산합니다. 이 페이지 위쪽 계산기와 같은 식입니다.</p>
+      </li>
+      <li>
+        <code class="cmd">route</code>
+        <h3>어떤 작업을 누가 맡는지</h3>
+        <p>작업 종류를 넣으면 손발과 머리 중 어느 쪽이 맡는지 알려줍니다. 매번 사람이 정하지 않아도 되도록 기준을 고정해 둔 것입니다.</p>
+      </li>
+      <li>
+        <code class="cmd">msg / inbox</code>
+        <h3>에이전트끼리 주고받는 채널</h3>
+        <p>값싼 쪽이 혼자 판단하기 어려운 지점에서 위로 넘기는 통로입니다. 넘긴 내용과 받은 답이 기록에 남아서, 왜 그렇게 결정됐는지 나중에 되짚을 수 있습니다.</p>
+      </li>
+      <li>
+        <span class="cmd">생성되는 정체성 프롬프트</span>
+        <h3>등급에 따라 문장이 달라집니다</h3>
+        <p>손발에게는 "혼자 판단하지 마라", 머리에게는 "분량 작업을 직접 하지 마라"가 들어갑니다. 싼 쪽이 넘겨야 할 자리에서 넘기고, 비싼 쪽이 분량으로 돈을 쓰지 않게 하는 장치입니다.</p>
+      </li>
+    </ul>
+
+    <div class="split2">
+      <div>
+        <h4>손발이 맡는 일</h4>
+        <p class="sub">로컬 또는 값싼 원격 · 출력이 긴 쪽</p>
+        <ul>
+          <li><span class="chip">구현</span></li>
+          <li><span class="chip">수정</span></li>
+          <li><span class="chip">리팩터링</span></li>
+          <li><span class="chip">테스트 작성</span></li>
+        </ul>
+      </div>
+      <div>
+        <h4>머리가 맡는 일</h4>
+        <p class="sub">상위 모델 · 출력이 짧고 판단이 무거운 쪽</p>
+        <ul>
+          <li><span class="chip">검수</span></li>
+          <li><span class="chip">설계</span></li>
+          <li><span class="chip">배포</span></li>
+          <li><span class="chip">스키마 변경</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="rules-foot">
+      나누는 기준은 <code>route</code>에 고정돼 있고, 팀 사정에 맞게 바꾸실 수 있습니다.
+      로컬 쪽을 쓰실 계획이면 <code>env</code>부터 돌려 장비가 받쳐주는지 먼저 확인하시는 걸 권합니다.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== PRICING ===================== -->
+<section id="pricing">
+  <div class="wrap">
+    <p class="eyebrow">가격</p>
+    <h2 class="sec">먼저 무료로 써보시고, 필요한 만큼만 올라오시면 됩니다</h2>
+    <p class="lede">
+      전부 다운로드 상품입니다. 프로판 세 등급은 받으시는 파일이 같고, 허용되는 사용 범위만 다릅니다.
+      아래 회수 기간은 월 24만원(월 30만원 · 생성 비중 80% · 로컬)을 아끼는 경우로 계산했습니다. 본인 수치는 <a href="#calc">계산기</a>에서 확인하실 수 있습니다.
+    </p>
+
+    <div class="free">
+      <div>
+        <div class="k">
+          <code>agentlock</code>
+          <span class="price">무료 · 오픈소스</span>
+        </div>
+        <p>
+          규율 9가지 중 3번(작업 시작 선언 의무)을 코드로 옮긴 CLI입니다.
+          에이전트가 파일을 건드리기 전에 무엇을 할지 선언하게 만들고, 이미 잡혀 있는 작업과 겹치면 막습니다.
+          설치해서 하루만 돌려보셔도 충돌이 어디서 나는지 눈에 보입니다.
+          나머지 8가지까지 도구가 강제하게 만든 것이 아래 agentlock pro입니다.
+        </p>
+      </div>
+      <a class="btn btn-ghost" href="https://github.com/gachi-dev/agentlock" target="_blank" rel="noopener">
+        <svg class="ico" aria-hidden="true"><use href="#i-github"></use></svg>
+        GitHub에서 받기
+      </a>
+    </div>
+
+    <div class="plans">
+      <article class="plan">
+        <p class="name">협업 운영 키트</p>
+        <p class="meta">문서 · 입금 확인 후 권한 부여</p>
+        <p class="price">₩30,000</p>
+        <p class="pay">월 24만원 아끼는 경우 약 4일이면 회수됩니다.</p>
+        <p class="desc">혼자서도 바로 적용할 수 있게, 규율 전체를 문서와 양식으로 정리했습니다.</p>
+        <ul>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>규율 9가지 전체 문서</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>에이전트별 정체성 프롬프트 템플릿</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>작업 인수인계 양식</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>충돌 사고 대응 절차</span></li>
+        </ul>
+        <a class="btn btn-ghost btn-block go" href="#buy">바로 입금하기</a>
+      </article>
+
+      <article class="plan">
+        <p class="name">agentlock pro 개인 라이선스</p>
+        <p class="meta">구매자 1인 사용 · 입금 확인 후 권한 부여</p>
+        <p class="price">₩99,000</p>
+        <p class="pay">월 24만원 아끼는 경우 약 12일이면 회수됩니다. 개발자 두 시간 남짓 값입니다.</p>
+        <p class="desc">문서를 읽고 지키는 방식이 아닙니다. 안 지키면 커밋과 배포가 그 자리에서 막힙니다.</p>
+        <ul>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>무료판은 규율 9가지 중 1가지만 코드입니다. 프로판은 9가지 전부가 코드입니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span><code>setup --preset 4</code> 한 번으로 손발과 머리를 나눠 세팅합니다. 담당 영역·배포 담당 지정, git 훅 설치, 등급별 정체성 프롬프트 생성까지 자동입니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span><code>env</code>로 로컬 런타임과 장비 메모리를 점검하고, <code>cost</code>로 절감액을, <code>route</code>로 작업 분담을 확인합니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>남의 담당 영역 파일 커밋, 증거 없는 완료 보고, 승인 없는 배포가 그 자리에서 막힙니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>기록이 해시로 연결돼 있어서, 한 줄만 고치거나 지워도 몇 번째 줄이 훼손됐는지 잡아냅니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>의존성 없음 · 파이썬 3.8 이상 · 파일 하나</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>쓰실 수 있는 범위: 구매하신 분 한 분. 본인이 직접 참여하는 프로젝트라면 개인 작업, 프리랜서 수주, 재직 중인 회사 업무 모두 제한이 없습니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>팀 공용 저장소에 커밋하시거나 다른 분께 파일을 전달하시는 것은 안 됩니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>나중에 팀 라이선스로 올리실 때는 차액 ₩291,000만 내시면 됩니다</span></li>
+        </ul>
+        <a class="btn btn-ghost btn-block go" href="#buy">바로 입금하기</a>
+      </article>
+
+      <article class="plan featured">
+        <span class="badge">추천</span>
+        <p class="name">agentlock pro 팀 라이선스</p>
+        <p class="meta">한 법인·단체 내부 · 인원 제한 없음</p>
+        <p class="price">₩390,000</p>
+        <p class="pay">한 사람 몫(월 24만원)만 계산해도 약 49일. 쓰는 사람이 여럿이면 그만큼 짧아집니다.</p>
+        <p class="desc">같은 저장소를 여럿이 함께 쓰신다면 이 등급입니다. 좌석 수를 세지 않습니다.</p>
+        <ul>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>파일과 기능은 개인 라이선스와 완전히 같습니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>한 법인 또는 단체 안에서는 인원 수 제한 없이 쓰실 수 있습니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>사내 저장소에 커밋해 두고 팀이 함께 쓰셔도 됩니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>우리 환경에 맞게 고쳐 쓰실 수 있습니다. 다만 소스를 다른 사내 시스템에 통합하시려면 소스 확장 라이선스가 필요합니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>계열사나 별도 법인은 포함되지 않습니다. 법인마다 따로 필요합니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>구매 시 사용하실 법인·단체명을 함께 알려주셔야 합니다. 그 조직 기준으로 확정됩니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>개인 라이선스를 이미 사셨다면 차액 ₩291,000으로 올리실 수 있습니다</span></li>
+        </ul>
+        <a class="btn btn-primary btn-block go" href="#buy">바로 입금하기</a>
+      </article>
+
+      <article class="plan">
+        <p class="name">agentlock pro 소스 확장 라이선스</p>
+        <p class="meta">팀 라이선스 + 내부 통합·수정</p>
+        <p class="price">₩990,000</p>
+        <p class="pay">한 사람 몫(월 24만원)만 계산하면 약 4개월. 팀 단위로 쓰시면 더 짧아집니다.</p>
+        <p class="desc">고쳐서 사내 시스템이나 사내 배포용 도구에 넣어 쓰셔야 한다면 이 등급입니다.</p>
+        <ul>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>파일과 기능은 개인·팀 라이선스와 완전히 같습니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>팀 라이선스의 권리를 전부 포함합니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>소스를 고쳐 자사 내부 시스템이나 사내 배포용 도구에 넣으실 수 있습니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>고치신 판을 조직 내부에 배포하실 수 있습니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>외부 판매, 공개 게시, 제3자 재배포는 이 등급에서도 안 됩니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>구매 시 사용하실 법인·단체명을 함께 알려주셔야 합니다. 그 조직 기준으로 확정됩니다</span></li>
+          <li><svg class="ico-sm" aria-hidden="true"><use href="#i-check"></use></svg><span>팀 라이선스를 이미 사셨다면 차액 ₩600,000으로 올리실 수 있습니다</span></li>
+        </ul>
+        <a class="btn btn-ghost btn-block go" href="#buy">바로 입금하기</a>
+      </article>
+    </div>
+
+    <div class="thesis">
+      <div>
+        <h3>세 등급 모두 같은 파일입니다. 올리실 때는 차액만 내시면 됩니다</h3>
+        <div class="split">
+          <span class="chip">개인 → 팀 ₩291,000</span>
+          <span class="chip">개인 → 소스 확장 ₩891,000</span>
+          <span class="chip">팀 → 소스 확장 ₩600,000</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          개인·팀·소스 확장 라이선스는 받으시는 파일이 완전히 같습니다. 기능 차이도 없습니다. 다른 것은 허용되는 사용 범위뿐입니다.
+          그래서 낮은 등급으로 시작하셨다가 나중에 올리실 때는 처음 내신 금액을 그대로 인정하고 차액만 받습니다.
+          기간 제한은 없고, 파일을 다시 받으시거나 다시 설치하실 필요도 없습니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="plans-foot">
+      <p>회수 기간은 개인 라이선스 기준 하루 절감액(월 절감액 ÷ 30일)으로 나눈 값입니다. 팀·소스 확장은 한 사람 몫만 넣어 계산한 보수적인 수치이고, 쓰는 사람이 늘면 그만큼 짧아집니다. 절감액이 계산기 기본값보다 작으면 회수도 그만큼 늦어집니다.</p>
+      <p>키트와 프로판의 관계: 키트는 규율을 사람이 읽고 이해하는 문서이고, 프로판은 같은 규율을 도구가 강제하는 쪽입니다. 둘 다 있으면 좋지만, 프로판만 사셔도 됩니다.</p>
+      <p>표시된 금액이 최종 결제 금액입니다. 따로 붙는 금액은 없습니다. 다만 현재는 현금영수증과 세금계산서를 발행해 드릴 수 없습니다. 회사 경비로 처리하셔야 하는 경우에는 구매를 보류해 주십시오.</p>
+      <p>전부 다운로드 상품입니다. 입금을 확인하는 대로 알려주신 구글 계정에 구글 드라이브 폴더 접근 권한을 드립니다. 보통 몇 시간 안에 들어갑니다. 받으신 뒤에는 바로 쓰실 수 있습니다.</p>
+      <p>미리 문의하지 않으셔도 됩니다. 바로 입금하시면 됩니다. 다만 어느 등급이 맞는지 판단이 어려우시면 상황만 알려주세요. 팀 규모와 저장소 사용 방식을 듣고 필요한 등급을 알려드립니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FAQ ===================== -->
+<section id="faq">
+  <div class="wrap">
+    <p class="eyebrow">자주 묻는 질문</p>
+    <h2 class="sec">먼저 물어보실 것 같은 것들</h2>
+
+    <div class="faq">
+      <details open>
+        <summary>로컬 모델이 코드를 제대로 쓰나요?</summary>
+        <div class="a">
+          <p>상위 모델만 못합니다. 이건 분명히 말씀드립니다. 같은 요구사항을 주면 놓치는 조건이 더 많고, 엉뚱한 파일을 건드리는 빈도도 높습니다.</p>
+          <p>그래서 검수를 붙이는 겁니다. 손발이 쓴 코드를 머리가 읽고 되돌려 보내는 구조라야 결과를 쓸 수 있습니다. 검수 없이 로컬만 쓰시는 건 권하지 않습니다. 그렇게 하면 아낀 돈보다 나중에 원인을 찾는 시간이 더 듭니다.</p>
+          <p>바꿔 말하면 이 도구가 파는 것은 "값싼 모델이 잘한다"가 아니라 "값싼 모델의 결과를 확인 가능하게 만든다"입니다. 미검증 항목을 비우면 완료 보고가 거부되고, 담당 영역 밖 파일은 커밋이 막히고, 한 일은 해시로 엮인 기록에 남습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>장비가 어느 정도여야 하나요?</summary>
+        <div class="a">
+          <p>메모리가 기준입니다. 16GB는 빠듯합니다. 작은 모델은 돌아가지만 맡길 수 있는 작업 폭이 좁습니다. 32GB부터 쓸 만해지고, 64GB 이상이면 생성 작업 대부분을 로컬로 내리실 수 있습니다.</p>
+          <p>본인 장비가 어디에 해당하는지는 <code>env</code> 명령으로 확인하실 수 있습니다. Ollama, LM Studio, llama.cpp, vLLM 중 무엇이 떠 있는지 감지하고, 메모리를 보고 감당 가능한 모델 규모를 알려줍니다.</p>
+          <p>장비가 안 되시면 로컬 대신 값싼 원격 모델을 쓰시면 됩니다. 절감폭은 줄지만 장비 조건이 없습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>로컬 말고 값싼 원격 모델을 써도 되나요?</summary>
+        <div class="a">
+          <p>됩니다. 구조는 같습니다. 생성을 아래로 내리고 검수를 위에 남기는 방식이라, 아래가 로컬이든 값싼 원격이든 규율은 그대로 적용됩니다.</p>
+          <p>다만 0원은 아닙니다. 출력 100만 토큰당 $25 대 $5, 5분의 1 수준으로 줄어듭니다. 월 30만원 · 생성 비중 80%인 경우로 계산하면 로컬은 월 6만원, 값싼 원격은 월 10.8만원이 됩니다. <a href="#calc">계산기</a>에서 "값싼 원격 모델"을 고르시면 본인 수치로 확인하실 수 있습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>정말 이만큼 줄어드나요?</summary>
+        <div class="a">
+          <p>생성 비중에 따라 달라집니다. 계산기는 다음을 가정합니다. 생성 비중만큼의 금액이 내리는 대상으로 옮겨가고 나머지는 상위 모델에 그대로 남는다, 로컬은 토큰 비용 0원이다, 값싼 원격은 5분의 1이다, 회수 기간은 하루 절감액이 일정하다고 보고 나눈 값이다.</p>
+          <p>기본값 80%에서는 5분의 1이 됩니다. 생성 비중이 90%인 팀이 전부 로컬로 내리면 10분의 1까지 내려갑니다. 반대로 이미 검수와 설계 위주로 쓰고 계셔서 생성 비중이 30%라면 절감폭도 그만큼 작습니다.</p>
+          <p>계산에 안 들어간 것도 밝혀 둡니다. 전기요금, 장비 구입비, 생성 품질이 떨어져 재작업할 때 드는 시간은 넣지 않았습니다. 그래서 숫자를 믿어달라고 말씀드리지 않고, <a href="#calc">계산기</a>에 본인 수치를 넣어 보시라고 말씀드립니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>환불이 되나요?</summary>
+        <div class="a">
+          <p>권한을 드리기 전까지는 전액 환불됩니다.</p>
+          <p>받아보신 뒤라도 <b>받으신 날부터 14일 안에</b> 말씀해 주시면 이유를 묻지 않고 환불해 드립니다. 법정 청약철회 기간(7일)보다 길게 잡아 둔 것입니다. <span class="ph">zenesisgp500@gmail.com</span>이나 <a href="https://open.kakao.com/o/gEQitNIi" target="_blank" rel="noopener">카카오톡 오픈채팅</a>로 알려주시면 됩니다. 법에 따른 청약철회 기간과 절차는 <a href="#withdraw">청약철회 안내</a>에 따로 정리해 두었습니다.</p>
+          <p>등급을 잘못 고르신 경우에는 환불 대신 차액만 받고 상위 등급으로 올려 드리는 쪽이 보통 더 낫습니다. 어느 쪽이든 원하시는 대로 처리해 드립니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>저희 팀 상황은 좀 다른데, 그대로 적용되나요?</summary>
+        <div class="a">
+          <p>규율은 특정 도구 이름이 아니라 경계와 순서에 대한 것입니다. 쓰시는 에이전트가 무엇이든 "누가 어느 파일을 쓰는가", "시작을 어디에 선언하는가", "배포는 누가 하는가"는 똑같이 필요합니다.</p>
+          <p>다만 저장소 구조는 팀마다 다릅니다. 키트의 양식과 절차는 팀 구조에 맞게 고쳐 쓰시는 것을 전제로 만들었고, 프로판은 setup 단계에서 담당 영역·배포 담당·승인 지점을 직접 지정하시게 되어 있습니다. 구조가 달라도 그 지정만 팀에 맞게 하시면 됩니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>무료판이랑 프로판 중 뭘 사야 하나요?</summary>
+        <div class="a">
+          <p>먼저 무료판을 하루 돌려보시고 정하셔도 됩니다. 무료판은 규율 9가지 중 1가지(작업 시작 선언)만 코드입니다. 나머지 8가지는 사람이 기억해서 지켜야 합니다.</p>
+          <p>프로판은 9가지 전부가 코드입니다. 남의 담당 영역 파일은 잠그는 것도 커밋하는 것도 막히고, 완료 보고에서 "검증하지 못한 것" 칸을 비우면 명령이 거부되고, 배포는 지정된 한 명이 사람 승인을 받아야 실행됩니다. 그 승인은 한 번 쓰면 소진됩니다. 지키는지 사람이 확인할 필요가 없어집니다.</p>
+          <p>기준은 이렇게 잡으시면 됩니다. 혼자 에이전트 하나를 쓰신다면 무료판으로 충분합니다. 에이전트를 둘 이상 동시에 붙이시거나, 사람 동료와 같은 저장소를 쓰신다면 프로판 쪽이 맞습니다.</p>
+          <p>프로판 안에서 어느 등급을 사셔야 하는지는 아래 &ldquo;저는 어떤 등급을 사야 하나요&rdquo; 항목에 정리해 두었습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>프로판은 라이선스가 어떻게 되나요?</summary>
+        <div class="a">
+          <p>등급이 세 가지입니다. 받으시는 파일은 셋 다 완전히 같고, 기능 차이도 없습니다. 다른 것은 허용되는 사용 범위뿐입니다.</p>
+          <p><b>개인 라이선스 ₩99,000</b> — 구매하신 분 한 분이 쓰시는 등급입니다. 본인이 직접 참여하는 프로젝트라면 개인 작업, 프리랜서 수주, 재직 중인 회사 업무 모두 제한이 없습니다. 다만 팀 공용 저장소에 커밋하시거나 다른 분께 파일을 전달하시는 것은 이 등급에 포함되지 않습니다.</p>
+          <p><b>팀 라이선스 ₩390,000</b> — 한 법인 또는 단체 내부에서 인원 수 제한 없이 쓰시는 등급입니다. 사내 저장소에 커밋해 팀과 공유하셔도 되고, 우리 환경에 맞게 고쳐 쓰셔도 됩니다. 다만 소스를 다른 사내 시스템에 통합하시려면 소스 확장 라이선스가 필요합니다. 계열사나 별도 법인은 포함되지 않아 법인마다 따로 필요합니다. 구매하실 때 사용하실 법인·단체명을 함께 알려주셔야 합니다.</p>
+          <p><b>소스 확장 라이선스 ₩990,000</b> — 팀 라이선스의 권리를 전부 포함합니다. 여기에 더해 소스를 고쳐 자사 내부 시스템이나 사내 배포용 도구에 통합하시는 것, 고치신 판을 조직 내부에 배포하시는 것까지 허용합니다.</p>
+          <p>세 등급 모두 외부 판매, 공개 게시, 제3자 재배포는 안 됩니다. 조직 밖으로 파일을 내보내시거나 다른 제품에 포함해 파시는 것은 어느 등급에서도 허용되지 않습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>저는 어떤 등급을 사야 하나요?</summary>
+        <div class="a">
+          <p>혼자 일하시는 1인 회사나 프리랜서라면 개인 라이선스(₩99,000)입니다. 본인 작업 환경에서 본인이 쓰시는 것이고, 수주받은 프로젝트에 쓰시는 것도 제한이 없습니다. 다만 고객사나 팀의 공용 저장소에 파일을 커밋해 두고 여럿이 쓰시게 되면 그때부터는 팀 라이선스 범위입니다.</p>
+          <p>사람 동료가 있고 같은 저장소를 함께 쓰신다면 팀 라이선스(₩390,000)입니다. 인원 수를 세지 않으니 팀이 커져도 추가 비용이 없습니다. 계열사나 별도 법인까지 함께 쓰셔야 한다면 법인마다 따로 필요합니다.</p>
+          <p>소스를 고쳐서 사내 시스템이나 사내 배포용 도구에 넣어 쓰셔야 한다면 소스 확장 라이선스(₩990,000)입니다. 그냥 팀에서 쓰기만 하시는 경우라면 여기까지 가실 필요는 없습니다.</p>
+          <p>지금 판단이 어려우시면 개인 라이선스로 시작하셔도 됩니다. 나중에 차액만 내고 올리실 수 있어서 손해 보시는 금액이 없습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>나중에 팀으로 올릴 수 있나요?</summary>
+        <div class="a">
+          <p>됩니다. 차액만 내시면 됩니다. 개인 → 팀은 ₩291,000, 개인 → 소스 확장은 ₩891,000, 팀 → 소스 확장은 ₩600,000입니다.</p>
+          <p>파일은 이미 갖고 계신 것과 같습니다. 새로 받으실 것도, 다시 설치하실 것도 없습니다. 차액을 입금하실 때는 처음 입금하신 이름 그대로 쓰시고 뒤 코드만 바꿔 주세요. 예) 홍길동P1→P2</p>
+          <p>기간 제한은 없습니다. 한 달 뒤에 올리시든 1년 뒤에 올리시든 차액은 같습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>에이전트를 하나만 쓰는데도 도움이 되나요?</summary>
+        <div class="a">
+          <p>절반쯤 도움이 됩니다. 충돌을 막는 규율(2·4·8)은 덜 쓰이지만, 작업 시작 선언·정체성 고정·검증 증거·인수인계는 혼자 쓰실 때도 그대로 효과가 있습니다. 특히 작업하던 대화 창이 끊겼다가 이어서 하실 때 차이가 납니다.</p>
+          <p>사람 동료와 같은 저장소를 쓰신다면 나머지 규율도 곧 쓰이게 됩니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>결제는 어떻게 하나요?</summary>
+        <div class="a">
+          <p>현재는 계좌이체만 받고 있습니다. 카드 결제는 준비 중입니다.</p>
+          <p>미리 문의하지 않으셔도 됩니다. 입금자명 뒤에 상품 코드를 붙여서 바로 입금하시면 그대로 주문이 됩니다. 계좌와 코드는 아래 <a href="#buy">결제 안내</a>에 적어 두었습니다.</p>
+          <p>한 가지만 함께 부탁드립니다. 파일 받으실 구글 계정 이메일을 오픈채팅이나 메일로 한 줄 보내 주세요. 그 계정에 접근 권한을 드리는 방식이라 이메일이 있어야 전달이 됩니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>파일은 어떻게 받나요?</summary>
+        <div class="a">
+          <p>구글 드라이브에 올려 두고, 구매하신 분 구글 계정에 그 폴더 접근 권한을 드리는 방식입니다. 공개 링크를 뿌리면 링크 하나로 전부 새기 때문에 이렇게 하고 있습니다. 그래서 입금하실 때 파일 받으실 구글 계정 이메일을 <a href="https://open.kakao.com/o/gEQitNIi" target="_blank" rel="noopener">카카오톡 오픈채팅</a>이나 <span class="ph">zenesisgp500@gmail.com</span>으로 한 줄 보내 주셔야 합니다.</p>
+          <p>권한이 들어가면 구글 드라이브에서 바로 받으실 수 있습니다. 구글 계정을 안 쓰시면 말씀해 주세요. 메일로 첨부해서 보내드리겠습니다.</p>
+          <p>한 번 받으신 뒤에도 언제든 다시 받으실 수 있습니다. 권한을 회수하지 않고 그대로 두기 때문에, 장비를 바꾸시거나 파일을 잃어버리셔도 같은 계정으로 들어가시면 됩니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>증빙 서류가 발행되나요?</summary>
+        <div class="a">
+          <p>현재는 현금영수증과 세금계산서를 발행해 드릴 수 없습니다. 회사 경비로 처리하셔야 하는 경우에는 구매를 보류해 주십시오.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>코드를 그대로 주시나요?</summary>
+        <div class="a">
+          <p>agentlock 무료판은 오픈소스로 공개되어 있으니 그대로 쓰시면 됩니다. agentlock pro는 파이썬 파일 하나를 그대로 받으시는 상품입니다. 안이 다 보이고, 필요하시면 직접 읽어보실 수 있습니다.</p>
+          <p>다만 운영 코드 4,250줄 전체는 팔지 않습니다. 제 환경에 맞춰 자란 코드라 그대로 드려도 다른 팀 저장소에서는 돌지 않습니다. 옮겨야 하는 건 그 코드가 아니라 규율이고, 규율을 옮기는 부분만 프로판으로 떼어 놓았습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>자료를 사면 나중에 업데이트도 받나요?</summary>
+        <div class="a">
+          <p>규율 문서는 계속 운영하면서 고쳐지고 있습니다. 개정판이 나오면 같은 폴더에 올려 둡니다. 권한이 그대로 유지되니 따로 요청하지 않으셔도 들어가서 받으실 수 있습니다. 다만 개정 주기를 약속드리지는 않습니다. 프로판도 같습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>얼마나 기다려야 하나요?</summary>
+        <div class="a">
+          <p>키트와 프로판 모두 입금과 구글 계정 이메일을 확인하는 대로 권한을 드립니다. 보통 몇 시간 안에 들어갑니다. 받으신 뒤에는 바로 쓰실 수 있습니다. 등급 변경도 같습니다.</p>
+          <p>사람이 직접 확인해서 권한을 드리는 방식이라 자동 처리는 아닙니다. 혼자 처리하고 있어서 늦은 밤이나 주말에는 조금 더 걸릴 수 있습니다. 급하시면 <a href="https://open.kakao.com/o/gEQitNIi" target="_blank" rel="noopener">카카오톡 오픈채팅</a>으로 말씀해 주세요.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== BUY ===================== -->
+<section id="buy">
+  <div class="wrap">
+    <p class="eyebrow">결제 안내</p>
+    <h2 class="sec">순서는 두 단계입니다</h2>
+    <p class="lede">미리 문의하지 않으셔도 됩니다. 입금자명 뒤에 상품 코드를 붙여 입금하시고, 파일 받으실 구글 계정 이메일만 한 줄 알려주시면 그대로 주문이 됩니다. 자동 결제 시스템 없이 직접 처리하고 있어서, 권한은 사람이 확인해서 드립니다.</p>
+
+    <div class="buy">
+      <div class="steps">
+        <ol>
+          <li>
+            <div>
+              <h3>코드를 붙여 입금하시고, 구글 계정 이메일을 한 줄 보내 주세요</h3>
+              <p>토스뱅크는 보내시는 분이 입금자명을 고칠 수 있습니다. 그 자리에 상품 코드를 붙여 주시면 그대로 주문서가 됩니다. 예) 홍길동P2. 코드표는 계좌 아래에 있습니다. 그리고 파일 받으실 구글 계정 이메일을 <a href="https://open.kakao.com/o/gEQitNIi" target="_blank" rel="noopener">오픈채팅</a>이나 <span class="ph">zenesisgp500@gmail.com</span>으로 한 줄 보내 주세요. 그 계정에 권한을 드리게 됩니다.</p>
+              <p><b>팀(P2)·소스 확장(P3) 라이선스를 사시는 경우에는 사용하실 법인·단체명을 함께 적어 주세요.</b> 이 두 등급은 조직 하나를 지정해 그 안에서 쓰는 방식이라, 알려주신 이름으로 사용 범위가 확정됩니다.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>확인되는 대로 그 계정에 접근 권한을 드립니다</h3>
+              <p>알려주신 구글 계정에 파일이 들어 있는 구글 드라이브 폴더 접근 권한을 드립니다. 보통 몇 시간 안에 들어갑니다. 권한이 들어가면 구글 드라이브에서 바로 받으실 수 있습니다. 키트와 agentlock pro 모두 같은 방식이고, 프로판은 세 등급 모두 같은 파일이라 등급이 달라도 받으시는 파일은 동일합니다.</p>
+            </div>
+          </li>
+        </ol>
+        <p class="note">등급이 애매하시면 입금 전에 물어보셔도 됩니다. 팀 규모와 저장소 사용 방식만 알려주시면 맞는 등급을 알려드립니다. 문의도 보통 몇 시간 안에, 늦어도 평일 기준 하루 안에 답을 드립니다. 하루가 지나도 답이 없으면 스팸함을 한 번 확인해 보신 뒤 다시 보내주세요.</p>
+      </div>
+
+      <div class="acct">
+        <h3>입금 계좌</h3>
+        <dl>
+          <div><dt>은행 · 계좌번호</dt><dd>
+            <button type="button" class="ph copy-acct" id="acct-copy" data-acct="100266293536">
+              <span>토스뱅크 100266293536</span>
+              <span class="cp" id="acct-copy-label">계좌번호 복사</span>
+            </button>
+            <span class="sr" role="status" aria-live="polite" id="acct-copy-live"></span>
+          </dd></div>
+          <div><dt>예금주</dt><dd><span class="ph">송우일</span></dd></div>
+          <div><dt>이메일</dt><dd><span class="ph">zenesisgp500@gmail.com</span></dd></div>
+          <div><dt>오픈채팅</dt><dd><span class="ph"><a href="https://open.kakao.com/o/gEQitNIi" target="_blank" rel="noopener">카카오톡 오픈채팅</a></span></dd></div>
+        </dl>
+
+        <div class="codes">
+          <h4>입금자명 뒤에 상품 코드를 붙여 주세요</h4>
+          <ul>
+            <li><span class="chip">협업 운영 키트 <b>KIT</b></span></li>
+            <li><span class="chip">개인 <b>P1</b></span></li>
+            <li><span class="chip">팀 <b>P2</b></span></li>
+            <li><span class="chip">소스 확장 <b>P3</b></span></li>
+          </ul>
+          <p>예) <b>홍길동P2</b> — 팀 라이선스를 구매하시는 홍길동 님</p>
+          <p>등급을 올리실 때는 처음 입금하신 이름 그대로 쓰시고 뒤에만 바꿔 주세요. 예) <b>홍길동P1→P2</b></p>
+        </div>
+
+        <p class="warn">문의 없이 바로 입금하셔도 됩니다. 입금자명 뒤에 상품 코드를 붙이시고, 파일 받으실 구글 계정 이메일만 한 줄 보내 주세요.</p>
+      </div>
+    </div>
+
+    <p class="disclose">
+      전달 방식을 밝혀 둡니다. 공개 링크를 뿌리면 링크 하나로 전부 새기 때문에, 구매하신 분 계정에만 권한을 드리는 방식으로 하고 있습니다. 구글 드라이브에서 바로 받으실 수 있습니다.
+      구글 계정을 안 쓰시면 말씀해 주세요. 메일로 첨부해서 보내드리겠습니다.
+      받으신 뒤 마음이 바뀌셨을 때의 절차는 바로 아래 <a href="#withdraw">청약철회 안내</a>에 적어 두었습니다.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== WITHDRAWAL ===================== -->
+<section id="withdraw">
+  <div class="wrap">
+    <p class="eyebrow">청약철회 안내</p>
+    <h2 class="sec">받으신 뒤에도 7일 안에는 무르실 수 있습니다</h2>
+    <p class="lede">전자상거래법에 따라 보장되는 청약철회 권리입니다. 법조문을 그대로 옮기지 않고 실제 처리 절차대로 적었습니다. 아래 기간과 방법이 그대로 적용됩니다.</p>
+
+    <ul class="cause">
+      <li>
+        <h3>기간 · 7일</h3>
+        <p>상품을 받으신 날, 곧 구글 드라이브 폴더에 접근 권한을 드린 날부터 <b>7일 이내</b>입니다. 권한을 드리기 전이라면 그 전에 언제든 취소하실 수 있습니다.</p>
+      </li>
+      <li>
+        <h3>방법 · 한 줄이면 됩니다</h3>
+        <p>이메일이나 오픈채팅으로 철회하시겠다는 뜻만 밝혀 주시면 됩니다. 정해진 양식도, 이유 설명도 필요 없습니다. <b>보내신 시점에 효력이 생깁니다.</b></p>
+      </li>
+      <li>
+        <h3>효과 · 3영업일 이내 환급</h3>
+        <p>디지털 파일이라 돌려보내실 것이 없습니다. 드라이브 접근 권한만 회수합니다. 판매자는 <b>철회 의사를 받은 날부터 3영업일 이내에</b> 입금하신 금액 전액을 환급합니다.</p>
+      </li>
+    </ul>
+
+    <div class="thesis">
+      <div>
+        <h3>표시·광고와 다르거나 계약대로 이행되지 않았다면 기간이 더 깁니다</h3>
+        <div class="split">
+          <span class="chip">공급받은 날부터 3개월 이내</span>
+          <span class="chip">그 사실을 안 날부터 30일 이내</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          받아보신 내용이 이 페이지의 표시·광고와 다르거나 계약 내용대로 이행되지 않은 경우에는, 7일이 지난 뒤에도 철회하실 수 있습니다.
+          공급받으신 날부터 3개월 이내에, 그리고 그 사실을 아신 날 또는 알 수 있었던 날부터 30일 이내에 말씀해 주시면 됩니다.
+          이때도 알리시는 방법과 3영업일 이내 환급은 위와 같습니다.
+        </p>
+      </div>
+    </div>
+
+    <p class="rules-foot">
+      <b>철회 접수처</b> — <span class="ph">zenesisgp500@gmail.com</span> 또는 <a href="https://open.kakao.com/o/gEQitNIi" target="_blank" rel="noopener">카카오톡 오픈채팅</a>. 어느 쪽으로 보내셔도 같습니다.
+    </p>
+
+    <div class="plans-foot">
+      <p>이와 별도로, 받으신 날부터 14일 안에 말씀해 주시면 이유를 묻지 않고 환불해 드립니다. 법에서 정한 청약철회 기간(7일)보다 길게 잡아 둔 것이고, 위 청약철회 권리를 대신하거나 줄이지 않습니다.</p>
+      <p>판매자명·주소·연락처는 페이지 맨 아래에 적어 두었습니다. 개인정보를 어떻게 다루는지도 같은 자리에 정리해 두었습니다.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="#top"><span class="dot"></span>에이전트 협업 운영 체계</a>
+        <p style="margin-top:10px;font-size:13px;color:var(--ink-2);max-width:34ch">
+          얇은 코드, 두꺼운 규율. 실서비스에서 <span class="js-days">55</span>일간 굴려본 운영 방식을 정리해 드립니다.
+        </p>
+      </div>
+      <div class="biz">
+        <div><b>판매자</b><span>송우일</span></div>
+        <div><b>주소</b><span>대구광역시 동구 팔공로47길 30, 3층</span></div>
+        <div><b>전화</b><span class="ph">053-986-4516</span></div>
+        <div><b>문의</b><span>zenesisgp500@gmail.com</span></div>
+        <div><b>오픈채팅</b><span><a href="https://open.kakao.com/o/gEQitNIi" target="_blank" rel="noopener">카카오톡 오픈채팅</a></span></div>
+        <div><b>입금 계좌</b><span>토스뱅크 100266293536 (송우일)</span></div>
+        <div><b>개인정보 보호책임자</b><span>송우일 · zenesisgp500@gmail.com</span></div>
+        <div><b>청약철회</b><span><a href="#withdraw">청약철회 안내</a></span></div>
+      </div>
+    </div>
+
+    <div class="faq" style="margin-top:28px">
+      <details>
+        <summary>개인정보 처리방침</summary>
+        <div class="a">
+          <p><b>수집하는 항목</b> — 성명(입금자명), 이메일 주소, 파일을 받으실 구글 계정 이메일. 이 세 가지만 받습니다.</p>
+          <p><b>수집·이용 목적</b> — 결제 확인, 상품 전달(구글 드라이브 폴더 접근 권한 부여), 문의 응대.</p>
+          <p><b>보유 기간</b> — 상품 접근 권한을 유지하는 동안 보관합니다. 삭제를 요청하시면 드라이브 공유 권한과 함께 지체 없이 파기합니다. 다만 전자상거래법에 따라 계약·청약철회 기록은 5년간 보관합니다.</p>
+          <p><b>처리 위탁</b> — 구글(Google LLC)에 위탁하고 있습니다. 위탁하는 업무는 파일 보관과 접근 권한 관리입니다.</p>
+          <p><b>제3자 제공</b> — 없습니다.</p>
+          <p><b>정보주체의 권리</b> — 언제든지 열람·정정·삭제·처리정지를 요구하실 수 있습니다. 아래 연락처로 말씀해 주시면 처리해 드립니다.</p>
+          <p><b>개인정보 보호책임자</b> — 송우일 · zenesisgp500@gmail.com</p>
+        </div>
+      </details>
+    </div>
+    <div class="copy">
+      <span>&copy; 2026 송우일</span>
+      <span>표기된 실적은 국내에서 운영 중인 실서비스의 실측값입니다.</span>
+      <span>고객사 및 서비스 정보는 공개하지 않습니다.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---- 운영 일수: 시작일부터 오늘까지 자동 갱신 ---- */
+  var startAttr = (document.documentElement.getAttribute('data-start') || '2026-06-20').split('-');
+  var startUTC = Date.UTC(+startAttr[0], (+startAttr[1]) - 1, +startAttr[2]);
+  var now = new Date();
+  var todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  var days = Math.floor((todayUTC - startUTC) / 86400000);
+  if (!isFinite(days) || days < 55) { days = 55; }
+
+  var labels = document.querySelectorAll('.js-days');
+  for (var i = 0; i < labels.length; i++) { labels[i].textContent = String(days); }
+
+  /* ---- 운영 일자 눈금: 하루에 하나 ---- */
+  var strip = document.getElementById('uptime');
+  if (strip) {
+    var have = strip.getElementsByTagName('i').length;
+    while (have < days) { strip.appendChild(document.createElement('i')); have++; }
+    while (have > days) { strip.removeChild(strip.lastElementChild); have--; }
+    strip.setAttribute('aria-label',
+      '2026년 6월 20일부터 오늘까지 ' + days + '일 동안 매일 가동되었음을 나타내는 막대 ' + days + '개');
+  }
+
+  /* ---- 밝은 화면 / 어두운 화면 전환 (저장하지 않습니다) ---- */
+  var root = document.documentElement;
+  var btn = document.getElementById('theme');
+  var use = document.getElementById('theme-ico').firstElementChild;
+  var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+  function isDark() {
+    var t = root.getAttribute('data-theme');
+    if (t) { return t === 'dark'; }
+    return !!(mq && mq.matches);
+  }
+  function paint() {
+    var dark = isDark();
+    use.setAttribute('href', dark ? '#i-sun' : '#i-moon');
+    btn.setAttribute('aria-label', dark ? '밝은 화면으로 전환' : '어두운 화면으로 전환');
+  }
+  if (btn) {
+    btn.addEventListener('click', function () {
+      root.setAttribute('data-theme', isDark() ? 'light' : 'dark');
+      paint();
+    });
+    if (mq && mq.addEventListener) { mq.addEventListener('change', paint); }
+    paint();
+  }
+
+  /* ---- 비용 계산기 (아무것도 저장하지 않고 서버로 보내지도 않습니다) ---- */
+  var LICENSE = 99000;          /* 개인 라이선스 */
+  var CHEAP_FACTOR = 0.2;       /* 값싼 원격: 출력 단가 $25 → $5 = 5분의 1 */
+  var SLIDER_MAX = 1500000;
+
+  var elSpend    = document.getElementById('c-spend');
+  var elSpendNum = document.getElementById('c-spend-num');
+  var elGen      = document.getElementById('c-gen');
+  var elSpendOut = document.getElementById('c-spend-out');
+  var elGenOut   = document.getElementById('c-gen-out');
+  var oNew  = document.getElementById('o-new');
+  var oSave = document.getElementById('o-save');
+  var oYear = document.getElementById('o-year');
+  var oDays = document.getElementById('o-days');
+  var mPay  = document.getElementById('m-pay');
+  var mCut  = document.getElementById('m-cut');
+  var kPay  = document.getElementById('k-pay');
+  var kCut  = document.getElementById('k-cut');
+  var meter = document.getElementById('c-meter');
+  var live  = document.getElementById('c-live');
+  var liveTimer = null;
+
+  function commas(n) {
+    return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+  /* 만원 단위 · 딱 떨어지면 정수, 아니면 소수 첫째 자리까지 */
+  function man(v) {
+    var m = Math.round((v / 10000) * 10) / 10;
+    var whole = Math.floor(Math.abs(m));
+    var frac = Math.round((Math.abs(m) - whole) * 10);
+    var head = commas(whole);
+    return (m < 0 ? '-' : '') + (frac ? head + '.' + frac : head);
+  }
+  function setVal(el, num, unit, pre) {
+    el.textContent = '';
+    if (pre) {
+      var pf = document.createElement('span');
+      pf.className = 'pre';
+      pf.textContent = pre;
+      el.appendChild(pf);
+    }
+    el.appendChild(document.createTextNode(num));
+    var u = document.createElement('span');
+    u.className = 'unit';
+    u.textContent = unit;
+    el.appendChild(u);
+  }
+  function segWidth(el, pct) {
+    if (pct <= 0) { el.style.display = 'none'; el.style.width = '0'; return; }
+    el.style.display = 'block';
+    el.style.width = (pct >= 100) ? '100%' : 'calc(' + pct + '% - 1px)';
+  }
+
+  function targetValue() {
+    var r = document.querySelectorAll('input[name="c-target"]');
+    for (var i = 0; i < r.length; i++) { if (r[i].checked) { return r[i].value; } }
+    return 'local';
+  }
+
+  function calc(spend, genPct, target) {
+    var gen = genPct / 100;
+    var genCost = spend * gen;                       /* 생성에 나가는 몫 */
+    var keep = spend - genCost;                      /* 검수·설계 등 상위 모델에 그대로 남는 몫 */
+    var factor = (target === 'local') ? 0 : CHEAP_FACTOR;
+    var newTotal = keep + genCost * factor;
+    var saveMonth = spend - newTotal;
+    var perDay = saveMonth / 30;
+    return {
+      newTotal: newTotal,
+      saveMonth: saveMonth,
+      saveYear: saveMonth * 12,
+      days: perDay > 0 ? Math.max(1, Math.round(LICENSE / perDay)) : 0
+    };
+  }
+
+  function render() {
+    var spend = Math.max(0, Number(elSpendNum.value) || 0);
+    var genPct = Math.max(0, Math.min(100, Number(elGen.value) || 0));
+    var r = calc(spend, genPct, targetValue());
+
+    elSpendOut.textContent = commas(spend) + '원';
+    elGenOut.textContent = genPct + '%';
+
+    setVal(oNew,  man(r.newTotal),  '만원');
+    setVal(oSave, man(r.saveMonth), '만원');
+    setVal(oYear, man(r.saveYear),  '만원');
+    if (r.days > 0) { setVal(oDays, commas(r.days), '일', '약'); }
+    else { setVal(oDays, '—', '', ''); }
+
+    kPay.textContent = man(r.newTotal) + '만원';
+    kCut.textContent = man(r.saveMonth) + '만원';
+
+    var payPct = spend > 0 ? (r.newTotal / spend) * 100 : 100;
+    segWidth(mPay, payPct);
+    segWidth(mCut, 100 - payPct);
+
+    var summary = '월 ' + commas(spend) + '원 중 ' + commas(r.newTotal) + '원은 그대로 나가고 '
+      + commas(r.saveMonth) + '원이 줄어듭니다. 연 ' + commas(r.saveYear) + '원'
+      + (r.days > 0 ? ', 개인 라이선스 회수까지 약 ' + commas(r.days) + '일입니다.' : '입니다.');
+    meter.setAttribute('aria-label', summary);
+    if (live) {
+      if (liveTimer) { clearTimeout(liveTimer); }
+      liveTimer = setTimeout(function () { live.textContent = summary; }, 600);
+    }
+  }
+
+  if (elSpend && elSpendNum && elGen) {
+    elSpend.addEventListener('input', function () {
+      elSpendNum.value = elSpend.value;
+      render();
+    });
+    elSpendNum.addEventListener('input', function () {
+      var v = Math.max(0, Number(elSpendNum.value) || 0);
+      elSpend.value = String(Math.min(v, SLIDER_MAX));
+      render();
+    });
+    elGen.addEventListener('input', render);
+    var radios = document.querySelectorAll('input[name="c-target"]');
+    for (var t = 0; t < radios.length; t++) { radios[t].addEventListener('change', render); }
+    render();
+  }
+
+  /* ---- 계좌번호 복사 (브라우저 저장소를 쓰지 않습니다) ---- */
+  var acctBtn = document.getElementById('acct-copy');
+  var acctLabel = document.getElementById('acct-copy-label');
+  var acctLive = document.getElementById('acct-copy-live');
+  var acctIdle = acctLabel ? acctLabel.textContent : '';
+  var acctTimer = null;
+
+  function flash(msg) {
+    if (!acctLabel) { return; }
+    acctLabel.textContent = msg;
+    if (acctLive) { acctLive.textContent = msg; }
+    if (acctTimer) { clearTimeout(acctTimer); }
+    acctTimer = setTimeout(function () {
+      acctLabel.textContent = acctIdle;
+      if (acctLive) { acctLive.textContent = ''; }
+      acctTimer = null;
+    }, 1600);
+  }
+
+  function copyFallback(text) {
+    var ok = false;
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '0';
+    ta.style.width = '1px';
+    ta.style.height = '1px';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    try {
+      ta.focus();
+      ta.select();
+      if (ta.setSelectionRange) { ta.setSelectionRange(0, text.length); }
+      ok = document.execCommand('copy');
+    } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  if (acctBtn) {
+    acctBtn.addEventListener('click', function () {
+      var num = acctBtn.getAttribute('data-acct') || '';
+      function done() { flash('복사됐습니다'); }
+      function failed() {
+        if (copyFallback(num)) { done(); }
+        else { flash('길게 눌러 복사해 주세요'); }
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          navigator.clipboard.writeText(num).then(done, failed);
+        } catch (e) { failed(); }
+      } else {
+        failed();
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
