@@ -6,9 +6,84 @@
 <meta name="color-scheme" content="light dark">
 <title>에이전트를 여럿 붙여도 서로 안 덮어씁니다 — 그리고 비용은 1/5로</title>
 <meta name="description" content="AI 코딩 에이전트를 둘 이상 돌리면 같은 파일을 서로 덮어씁니다. 오류도 흔적도 없이 작업이 사라집니다. agentlock 은 건드릴 파일을 먼저 선언하게 하고, 남이 잡은 파일이 섞인 커밋을 막습니다. 여기에 생성은 값싼 모델·검수는 상위 모델로 나누는 운영 규율 9가지까지. 무료판은 MIT 오픈소스.">
-<meta property="og:title" content="에이전트 여럿이 같은 파일을 덮어쓰는 것을 막습니다">
-<meta property="og:description" content="생성은 값싼 쪽으로, 검수만 위에. 월 30만원이 6만원, 연 288만원 절감. 값싼 모델을 실전에 투입할 수 있게 만드는 규율 9가지.">
+<meta property="og:title" content="에이전트 여럿이 같은 파일을 덮어쓰는 것을 막습니다 · Stop parallel AI agents from overwriting each other">
+<meta property="og:description" content="AI coding agents on one repository overwrite each other's work. agentlock makes each agent declare the files it will touch, and a git hook blocks commits containing files someone else holds. Free core is MIT. 여러 에이전트가 같은 파일을 덮어쓰는 것을 막고, 그 규율 위에서 값싼 모델을 실전에 투입합니다.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://gachi-dev.github.io/agentlock/">
+<meta property="og:site_name" content="agentlock">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Stop parallel AI coding agents from overwriting each other">
+<meta name="twitter:description" content="Agents declare the files they touch. A git hook blocks commits containing files someone else holds. Zero dependencies, single Python file, MIT.">
+<meta name="keywords" content="AI coding agents, multi-agent, file locking, git hooks, Claude Code, Cursor, Codex, agentic coding, agent orchestration, parallel agents, 에이전트 충돌, 파일 락, 멀티 에이전트, 바이브코딩">
+<meta name="author" content="Wooil Song">
+<link rel="canonical" href="https://gachi-dev.github.io/agentlock/">
+<link rel="alternate" hreflang="ko" href="https://gachi-dev.github.io/agentlock/">
+<link rel="alternate" hreflang="en" href="https://gachi-dev.github.io/agentlock/en/">
+<link rel="alternate" hreflang="x-default" href="https://gachi-dev.github.io/agentlock/en/">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "agentlock",
+      "alternateName": "agentlock pro",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Linux, macOS, Windows",
+      "description": "File-level locking that stops parallel AI coding agents from overwriting each other's work. Agents declare the files they are about to touch; a conflicting claim is refused, and a git pre-commit hook blocks commits containing files another agent holds. Locks expire so a dead agent does not wedge the repository, and every claim, release and forced takeover is recorded in an append-only, hash-chained ledger committed alongside the code.",
+      "url": "https://gachi-dev.github.io/agentlock/",
+      "downloadUrl": "https://github.com/gachi-dev/agentlock",
+      "softwareVersion": "1.3.0",
+      "inLanguage": ["en", "ko"],
+      "license": "https://opensource.org/licenses/MIT",
+      "author": { "@type": "Person", "name": "Wooil Song" },
+      "offers": [
+        { "@type": "Offer", "name": "agentlock (free core)", "price": "0", "priceCurrency": "USD", "category": "free", "url": "https://github.com/gachi-dev/agentlock" },
+        { "@type": "Offer", "name": "agentlock pro Solo", "price": "29", "priceCurrency": "USD", "url": "https://gachi-dev.github.io/agentlock/#pricing" },
+        { "@type": "Offer", "name": "agentlock pro Team", "price": "79", "priceCurrency": "USD", "url": "https://gachi-dev.github.io/agentlock/#pricing" },
+        { "@type": "Offer", "name": "agentlock pro Business", "price": "199", "priceCurrency": "USD", "url": "https://gachi-dev.github.io/agentlock/#pricing" }
+      ],
+      "featureList": [
+        "File ownership locks with TTL",
+        "Git pre-commit and pre-push hooks",
+        "Agent-to-agent messaging (crew talk)",
+        "Handoff between agents",
+        "Completion reports that require unverified items",
+        "Approval gates for deploys and risky paths",
+        "Append-only hash-chained ledger",
+        "Cost routing between local and premium models"
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How is this different from git worktrees?",
+          "acceptedAnswer": { "@type": "Answer", "text": "If your agents work on separate branches, worktrees are the right tool and agentlock does not replace them. Git refuses to check out the same branch twice, so several agents sharing one branch is outside what worktrees can do. A shared checkout is exactly what Claude Code Agent Teams and subagents give you. The two compose fine." }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it work with Claude Code, Cursor and Codex?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. It is a CLI with no dependencies, so any agent that can run a shell command can call it. Agents only need to read the exit code of the claim command." }
+        },
+        {
+          "@type": "Question",
+          "name": "What does it not do?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Locking is per file, so two agents editing different functions in one large file still serialize. It is advisory: an agent that never calls claim is not stopped, and the git hook can be bypassed with --no-verify. Semantic conflicts across different files are not caught." }
+        },
+        {
+          "@type": "Question",
+          "name": "Is it available in English?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Set AGENTLOCK_LANG to en or ko; leave it unset and it follows the system locale. The manual, quick start, license guide and the full document kit ship in both languages." }
+        }
+      ]
+    }
+  ]
+}
+</script>
 <style>
 /* ============================================================
    Tokens — light is the base, dark is selected (not flipped)
@@ -505,6 +580,12 @@ footer .biz div{display:flex;flex-wrap:wrap;gap:4px 10px}
 footer .biz b{font-weight:600;color:var(--ink-2)}
 footer .copy{margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* 영어권 방문자용 안내 바 */
+.langbar{background:var(--surface-2);border-bottom:1px solid var(--rule);padding:10px 0;font-size:14px;line-height:1.6}
+.langbar p{margin:0;color:var(--ink-2)}
+.langbar a{color:var(--accent-text);font-weight:600;margin-left:10px;white-space:nowrap}
+@media (max-width:640px){.langbar{font-size:13px}}
 </style>
 </head>
 <body>
@@ -524,7 +605,8 @@ footer .copy{margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);f
   <div class="wrap topbar">
     <a class="brand" href="#top"><span class="dot"></span>에이전트 협업 운영 체계 <small>실운영 <span class="js-days">55</span>일차</small></a>
     <nav class="main" aria-label="주요 섹션">
-      <a href="#cost">비용 구조</a>
+      <a href="#teamwork">협업</a>
+        <a href="#cost">비용 구조</a>
       <a href="#calc">계산기</a>
       <a href="#rules">규율 9가지</a>
       <a href="#setup">역할 분리</a>
@@ -544,6 +626,18 @@ footer .copy{margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);f
 <a id="top"></a>
 
 <!-- ===================== HERO ===================== -->
+<div class="langbar">
+  <div class="wrap">
+    <p>
+      <b>English speakers —</b> AI coding agents on one repository overwrite each other&rsquo;s work.
+      This tool makes each agent declare the files it will touch, and a git hook blocks commits containing files someone else holds.
+      The free core is MIT-licensed, and both the tool and its documentation ship in English.
+      <a href="./en/">Read this page in English &rarr;</a>
+      <a href="https://github.com/gachi-dev/agentlock" target="_blank" rel="noopener">GitHub</a>
+    </p>
+  </div>
+</div>
+
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
@@ -559,8 +653,14 @@ footer .copy{margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);f
       <p class="sub">
         agentlock 은 규칙 하나를 강제합니다. <b>건드릴 파일을 먼저 선언하고, 남이 선언한 파일은 건드리지 않는다.</b>
         선언 없이 커밋하면 git 훅이 막습니다. 누가 언제 무엇을 잡았고 누가 뺏었는지가 전부 기록에 남습니다.
-        <b>무료판은 MIT 오픈소스</b>입니다. 유료판은 여기에 배포·승인·완료 보고까지 코드로 강제하고,
-        생성은 값싼 모델·검수는 상위 모델로 나눠 <b>월 30만원을 6만원으로</b> 내립니다.
+        <b>무료판은 MIT 오픈소스</b>입니다.
+      </p>
+      <p class="sub">
+        그리고 여기서 한 가지가 더 따라옵니다. <b>에이전트들이 서로 안 밟고 협업하게 되면, 값싼 모델을 쓸 수 있게 됩니다.</b>
+        지금 로컬 모델이나 값싼 모델을 안 쓰는 이유는 성능이 아니라 <b>혼자 두면 결과를 믿을 수 없어서</b>입니다.
+        누가 뭘 건드렸는지 모르고, 검증 안 한 걸 검증했다고 하고, 승인 없이 배포합니다.
+        그 자리를 규율로 막아 두면 분량이 많은 생성은 값싼 쪽에 맡기고 판단과 검수만 상위 모델이 봐도 됩니다.
+        <b>월 30만원이 6만원이 되는 건 그 결과입니다.</b> 싼 모델을 써서가 아니라, 싼 모델을 믿을 수 있게 만들어서입니다.
       </p>
       <div class="cta-row">
         <a class="btn btn-primary" href="https://github.com/gachi-dev/agentlock" target="_blank" rel="noopener">
@@ -665,6 +765,76 @@ footer .copy{margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);f
       <p>권고형 락입니다. 선언을 건너뛰고 편집기로 바로 고치면 막지 못합니다. 그래서 git 훅이 2차 방어선인데, 이것도 <code>--no-verify</code> 로 우회됩니다. 막는 대상은 <b>정직하게 일하다 실수하는 경우</b>이지 작정하고 뚫는 경우가 아닙니다.</p>
       <p>서로 다른 파일에서 생기는 의미적 충돌은 잡지 못합니다. 그건 테스트와 검수의 몫입니다.</p>
       <p>그리고 이 도구는 &ldquo;더 많이 병렬로 돌리라&rdquo;고 권하지 않습니다. 작은 작업이면 하나씩 순서대로 하는 편이 빠릅니다. <b>이미 여럿을 돌리고 계신 분들의 사고를 막는 용도</b>입니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TEAMWORK ===================== -->
+<section id="teamwork">
+  <div class="wrap">
+    <p class="eyebrow">협업</p>
+    <h2 class="sec">덮어쓰기만 막는 게 아니라, 한 팀처럼 굴립니다</h2>
+    <p class="lede">
+      파일 락은 첫 단추일 뿐입니다. 에이전트 여럿이 실제로 <b>같이 일하려면</b> 그다음이 있어야 합니다.
+      누가 무엇을 맡는지, 판단이 필요할 때 누구에게 넘기는지, 자리를 비우면 누가 이어받는지,
+      다 됐다는 말을 어떻게 믿는지. 그걸 전부 코드로 만들어 둔 것이 이 도구입니다.
+    </p>
+
+    <ul class="cause">
+      <li>
+        <h3>영역을 나눠 갖습니다</h3>
+        <p><code>claim</code> 으로 건드릴 파일을 먼저 잡습니다. 남이 잡은 건 못 잡고, 담당 영역 밖은 커밋이 막힙니다. 에이전트가 죽어도 시간이 지나면 자동으로 풀립니다.</p>
+      </li>
+      <li>
+        <h3>판단을 위로 넘깁니다</h3>
+        <p><code>msg</code> 와 <code>inbox</code> 로 에이전트끼리 말을 주고받습니다. 손발이 혼자 정하지 않고 "이건 판단이 필요합니다" 하고 넘기면, 머리가 받아서 답합니다.</p>
+      </li>
+      <li>
+        <h3>자리를 비워도 이어집니다</h3>
+        <p><code>handoff</code> 로 인수인계를 남깁니다. 세션이 끊기거나 컨텍스트가 넘쳐 죽어도, 다음 에이전트가 무엇을 하다 멈췄는지 읽고 이어받습니다.</p>
+      </li>
+      <li>
+        <h3>"다 됐습니다"를 검증합니다</h3>
+        <p><code>report</code> 는 <b>검증하지 못한 항목을 비우면 거부합니다.</b> 빈칸은 거짓말이 아니지만 다음 사람에게 오해를 만듭니다. 그 오해를 구조로 막습니다.</p>
+      </li>
+      <li>
+        <h3>배포는 한 명만, 승인을 받고</h3>
+        <p><code>request</code> 와 <code>approve</code> 로 배포·스키마 변경·위험 구역에 사람 승인을 강제합니다. 원장에 적었다는 이유로 진행할 수 없습니다.</p>
+      </li>
+      <li>
+        <h3>기록이 남고, 고치면 들킵니다</h3>
+        <p><code>ledger</code> 는 해시로 엮인 append-only 원장입니다. 한 줄만 고치거나 지워도 몇 번째 줄이 훼손됐는지 잡아냅니다. 팀 전체가 같은 기록을 봅니다.</p>
+      </li>
+    </ul>
+
+    <div class="thesis">
+      <div>
+        <h3>그래서 값싼 모델을 쓸 수 있게 됩니다</h3>
+        <div class="split">
+          <span class="chip">협업 규율이 먼저</span>
+          <span class="chip">비용 절감은 결과</span>
+        </div>
+      </div>
+      <div>
+        <p>
+          로컬 모델이나 값싼 모델을 안 쓰는 진짜 이유는 성능이 아닙니다.
+          <b>혼자 두면 결과를 믿을 수 없어서</b>입니다. 남의 파일을 건드리고, 검증 안 한 걸 검증했다 하고,
+          승인 없이 배포하고, 무엇을 했는지 기록이 없습니다. 그러면 결국 사람이 전부 다시 봐야 하고,
+          그럴 바에는 처음부터 비싼 모델에 맡기는 게 낫습니다.
+        </p>
+        <p>
+          위 여섯 가지를 코드로 걸어두면 그 계산이 뒤집힙니다.
+          <b>분량이 많은 생성은 값싼 쪽에 맡기고, 판단과 검수만 상위 모델이 봅니다.</b>
+          값싼 쪽이 선을 넘으면 도구가 막고, 넘긴 판단은 위로 올라오고, 무엇을 검증하지 못했는지가 보고에 남습니다.
+          <b>월 30만원이 6만원이 되는 것은 여기서 나오는 결과입니다.</b>
+          싼 모델을 써서가 아니라, 싼 모델을 믿을 수 있게 만들어서입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="plans-foot">
+      <p>무료판 <code>agentlock</code> 은 이 중 첫 번째(파일 소유권)만 코드로 만든 것입니다. MIT 오픈소스라 그대로 쓰셔도 됩니다.</p>
+      <p>나머지 다섯 가지 — 크루톡, 인수인계, 완료 보고 검증, 승인 게이트, 해시 원장 — 과 역할별 정체성 프롬프트, 비용 배분 자동 설정은 유료판에 들어 있습니다.</p>
     </div>
   </div>
 </section>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://gachi-dev.github.io/agentlock/sitemap.xml
