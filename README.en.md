@@ -449,7 +449,7 @@ Integrating the source into another piece of software is in none of the plans. A
 
 Pro commands run against a license key. The server is contacted once a day, keeps working for 14 days when it can't be reached, and what gets sent is the key, an activation identifier, and the machine label you chose. No source code and no file listings leave your machine in any form.
 
-> ⚠️ **Korean-language only.** The program's messages and all bundled documentation are currently in Korean. An English version is in preparation; no date is promised. Please do not subscribe if you need English.
+**English and Korean are both supported.** Set the interface language with `AGENTLOCK_LANG`; leave it unset and it follows your environment. The manual, quick start, license guide and the full document kit all ship in both languages.
 
 Plans and pricing are here — **https://gachi-dev.github.io/agentlock/**
 
