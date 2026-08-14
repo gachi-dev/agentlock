@@ -412,6 +412,40 @@ With no paths given, it reads staged files from `git diff --cached` on its own.
 
 It builds a throwaway repo under `/tmp` and verifies claim/deny/release, TTL expiry, directory locks, globs, `--force` audit records, pre-commit blocking, and zero lock loss across 20 concurrent processes — then cleans up after itself.
 
+## What this tool does not enforce
+
+agentlock is one of nine operating disciplines — number 3, declaring work before you start — moved into code. Those nine are what was left after running eight kinds of agents on one repository for 55 days:
+
+1. Fixed role separation
+2. File ownership and interface contracts
+3. **Declaring work before you start** — the one this tool enforces
+4. A single deployer
+5. Handover when someone is unavailable
+6. Pinned identity prompts
+7. Verification evidence required in completion reports
+8. Approval gates
+9. An append-only ledger
+
+The other eight are not enforced here. Shipping the same deploy twice, a completion report nobody verified, picking up work after a conversation window dies — number 3 stops none of them.
+
+If you need that part too, there are two things, kept separate from this repo:
+
+**Team operating kit** — the full text of all nine disciplines, 3 agent identity prompt templates, 5 forms, an incident procedure for when work does collide, and an adoption checklist. This is the read-it-and-follow-it side.
+
+**agentlock pro** — all nine enforced in code. One `setup` run assigns roles, file ownership, and the deploy owner, and installs the git hooks. Committing a file owned by someone else is blocked, a completion report that leaves the "not verified" section empty is rejected, a deploy only runs when the designated person has human approval, and records are hash-chained, so editing one afterwards tells you exactly which line was tampered with.
+
+Pro comes in three tiers. All three ship the same files; only the permitted scope of use differs.
+
+- **Individual** — one buyer, on their own machines. Any work you take part in yourself counts: personal projects, freelance contracts, and the job you currently hold.
+- **Team** — one named company or organization, no headcount limit. Includes committing to an internal repository for the team to share, and installing on shared servers and CI.
+- **Source extension** — everything in the team tier, plus integrating the source into the organization's internal systems and distributing the result inside that organization.
+
+Pricing and license terms are on the sales page.
+
+Both are here — https://gachi-dev.github.io/agentlock/
+
+One thing said plainly first: the free tool is enough for a lot of setups. If you're running two or three agents on your own, number 3 alone stops most of the accidents, and you don't need more than that. The two above are worth a look once you have to put discipline around deploys and approvals as well.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
