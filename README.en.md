@@ -39,13 +39,18 @@ This is already on the record.
 
 The problem is acknowledged; the remedy offered is manual discipline. This tool is that discipline moved into code.
 
+The same page also says this:
+
+> Task claiming uses **file locking** to prevent race conditions when multiple teammates try to claim the same task simultaneously.
+
+**Locking to claim a task. No locking to edit the file.** That gap is exactly where this tool sits.
+
 There are incident reports too.
 
 | Where | What happened |
 |---|---|
-| [claude-code #28813](https://github.com/anthropics/claude-code/issues/28813) | 315 corrupted files over a week of concurrent sessions |
-| [openai/codex #10681](https://github.com/openai/codex/issues/10681) | One agent reverting another agent's changes |
-| [github community #163388](https://github.com/orgs/community/discussions/163388) | Later edits always overwrite earlier ones; reproduced by three people including staff |
+| [claude-code #55586](https://github.com/anthropics/claude-code/issues/55586) | Spawning one teammate produced 151 instances that made **12,974 file edits** to the same codebase simultaneously |
+| [openai/codex #10681](https://github.com/openai/codex/issues/10681) | One agent reverting another agent's changes — even after being told "Do NOT change any files you did not touch" |
 
 ## How this differs from git worktrees
 

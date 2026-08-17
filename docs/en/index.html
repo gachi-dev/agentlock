@@ -742,16 +742,16 @@ footer .copy{margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);f
 
     <ul class="cause">
       <li>
-        <h3>315 corrupted files</h3>
-        <p>A week of concurrent-session collisions left 315 files broken, filed as an issue. <a href="https://github.com/anthropics/claude-code/issues/28813" target="_blank" rel="noopener">claude-code #28813</a></p>
+        <h3>12,974 file edits</h3>
+        <p>Spawning one teammate produced 151 instances editing the same codebase at once. <a href="https://github.com/anthropics/claude-code/issues/55586" target="_blank" rel="noopener">claude-code #55586</a></p>
       </li>
       <li>
         <h3>One agent undoes another</h3>
-        <p>A report of one agent reverting another agent's changes. The person using it finds out long after the fact. <a href="https://github.com/openai/codex/issues/10681" target="_blank" rel="noopener">openai/codex #10681</a></p>
+        <p>Reported to keep happening even after being told &ldquo;Do NOT change any files you did not touch.&rdquo; <a href="https://github.com/openai/codex/issues/10681" target="_blank" rel="noopener">openai/codex #10681</a></p>
       </li>
       <li>
-        <h3>Last write always wins</h3>
-        <p>A discussion on later changes silently overwriting earlier ones. Three people, staff included, confirmed the repro. <a href="https://github.com/orgs/community/discussions/163388" target="_blank" rel="noopener">github #163388</a></p>
+        <h3>Locks the task, not the file</h3>
+        <p>The same page says task claiming uses file locking to prevent races. Editing the file itself has no lock. <a href="https://code.claude.com/docs/en/agent-teams" target="_blank" rel="noopener">Agent Teams docs</a></p>
       </li>
     </ul>
 

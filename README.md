@@ -42,13 +42,18 @@ agentlock은 규칙 하나만 강제합니다.
 
 문제는 인정하는데 해법은 **사람이 알아서 나누라는 것**뿐입니다. 이 도구는 그 "알아서"를 코드로 옮긴 것입니다.
 
+같은 문서 안에 이런 문장도 있습니다.
+
+> 태스크 클레임은 여러 팀원이 같은 태스크를 동시에 잡으려 할 때 생기는 경합을 막기 위해 **파일 잠금**을 쓴다.
+
+**태스크를 잡을 때는 잠금을 씁니다. 정작 파일을 고칠 때는 안 씁니다.** 이 도구가 서 있는 자리가 정확히 그 사이입니다.
+
 실제 피해 기록도 있습니다.
 
 | 어디 | 무슨 일 |
 |---|---|
-| [claude-code #28813](https://github.com/anthropics/claude-code/issues/28813) | 동시 세션 충돌로 7일간 손상 파일 315개 |
-| [openai/codex #10681](https://github.com/openai/codex/issues/10681) | 한 에이전트가 다른 에이전트의 변경을 되돌림 |
-| [github community #163388](https://github.com/orgs/community/discussions/163388) | 나중 변경이 항상 이전 것을 덮어씀, 직원 포함 3명이 재현 확인 |
+| [claude-code #55586](https://github.com/anthropics/claude-code/issues/55586) | 팀원 하나를 띄웠는데 인스턴스 151개가 튀어나와, 같은 코드베이스에 **파일 편집 12,974번**을 동시에 수행 |
+| [openai/codex #10681](https://github.com/openai/codex/issues/10681) | 한 에이전트가 다른 에이전트의 변경을 되돌림. "건드리지 않은 파일은 절대 바꾸지 말라"고 지시해도 반복됨 |
 
 ## git worktree 와 무엇이 다른가
 
